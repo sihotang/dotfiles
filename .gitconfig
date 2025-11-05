@@ -1,8 +1,0 @@
-cat > .gitconfig <<'EOF'
-[user]
-    name = Your Name
-    email = you@example.com
-
-[core]
-    editor = code --wait
-EOF
