@@ -1,7 +1,103 @@
 [user]
-  name = Sihotang
+  name = {{ .git.name }}
   email = {{ .git.email }}
+
 [core]
   editor = vim
+  whitespace = trailing-space,space-before-tab
+  autocrlf = input
+  safecrlf = true
+  pager = less -FRX
+  excludesfile = ~/.gitignore_global
+  # Make `git rebase` safer on macOS
+  trustctime = false
+  # Speed up commands involving untracked files
+  untrackedCache = true
+
+[color]
+  ui = auto
+  diff = auto
+  status = auto
+  branch = auto
+  interactive = auto
+  grep = auto
+
+[pull]
+  rebase = true
+  ff = only
+
+[push]
+  default = current
+  autoSetupRemote = true
+  # Make `git push` push relevant annotated tags when pushing branches out
+  followTags = true
+
+[fetch]
+  # Remove any remote-tracking references that no longer exist on the remote
+  prune = true
+  # Automatically prune when fetching or pulling
+  pruneTags = true
+
+[merge]
+  tool = vimdiff
+  conflictstyle = diff3
+  # Include summaries of merged commits in newly created merge commit messages
+  log = true
+
+[diff]
+  colorMoved = default
+  algorithm = histogram
+  # Detect copies as well as renames
+  renames = copies
+  # Use better, descriptive initials (c, i, w) instead of a/b
+  mnemonicPrefix = true
+  # Show renames/moves as such
+  renamedLimit = 0
+
+[init]
+  defaultBranch = main
+
+[branch]
+  # Show most recently changed branches first
+  sort = -committerdate
+  # When creating a new branch, set up 'pull' to rebase instead of merge
+  autoSetupRebase = always
+
 [includeIf "gitdir:~/work/"]
   path = ~/work/.gitconfig
+
+[help]
+  # Correct and execute mistyped commands
+  autocorrect = 1
+
+[alias]
+  # View abbreviated SHA, description, and history graph of the latest 20 commits
+  lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+  # View the current working tree status using the short format
+  st = status -sb
+  # Show verbose output about tags, branches or remotes
+  tags = tag -l
+  branches = branch -a
+  remotes = remote -v
+  # Show the last commit
+  last = log -1 HEAD --stat
+  # Unstage changes
+  unstage = reset HEAD --
+  # Amend the currently staged files to the latest commit
+  amend = commit --amend --no-edit
+  # Interactive rebase with the given number of latest commits
+  reb = "!r() { git rebase -i HEAD~$1; }; r"
+  # Find branches containing commit
+  fb = "!f() { git branch -a --contains $1; }; f"
+  # Find tags containing commit
+  ft = "!f() { git describe --always --contains $1; }; f"
+  # Find commits by source code
+  fc = "!f() { git log --pretty=format:'%C(yellow)%h  %Cblue%ad  %Creset%s%Cgreen  [%cn] %Cred%d' --decorate --date=short -S$1; }; f"
+  # List contributors with number of commits
+  contributors = shortlog --summary --numbered
+  # Show staged changes
+  dc = diff --cached
+  # Show diff of last commit
+  dlc = diff --cached HEAD^
+  # Clean merged branches
+  cleanup = "!git branch --merged | grep -v '\\*' | xargs -n 1 git branch -d"
