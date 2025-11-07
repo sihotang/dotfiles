@@ -4,14 +4,24 @@ Publish this repo at: `github.com/sihotang/dotfiles`
 
 ## Initial push
 
+If you're starting from this repository:
+
 ```bash
-unzip dotfiles.zip -d dotfiles
-cd dotfiles
 git init
 git add .
 git commit -m "Initial commit: dotfiles starter by sihotang"
 git remote add origin git@github.com:sihotang/dotfiles.git
 git branch -M main
+git push -u origin main
+```
+
+Or if cloning and customizing:
+
+```bash
+git clone git@github.com:sihotang/dotfiles.git
+cd dotfiles
+# Make your customizations
+git remote set-url origin git@github.com:YOUR_USERNAME/dotfiles.git
 git push -u origin main
 ```
 

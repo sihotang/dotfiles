@@ -5,8 +5,7 @@ Chezmoi manages your dotfiles and templates.
 ## Install
 
 ```bash
-sh -c "$(curl -fsLS get.chezmoi.io)"
-chezmoi init --apply sihotang
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply sihotang
 ```
 
 ## Templates

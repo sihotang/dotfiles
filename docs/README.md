@@ -12,6 +12,8 @@ This documentation explains how to install, customize, and use your chezmoi-base
 5. [Using DevContainers with Project Dockerfiles](05-using-project-dockerfiles.md)
 6. [Troubleshooting](06-troubleshooting.md)
 7. [GitHub Publishing](07-github-publishing.md)
+8. [Library Functions and Scripts](08-library-and-scripts.md)
+9. [Customization Guide](09-customization.md)
 
 ## 🔗 Quick Start
 
