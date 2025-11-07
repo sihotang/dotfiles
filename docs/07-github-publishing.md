@@ -2,7 +2,6 @@
 
 Publish this repo at: `github.com/sihotang/dotfiles`
 
-
 ## Initial push
 
 ```bash
@@ -15,7 +14,6 @@ git remote add origin git@github.com:sihotang/dotfiles.git
 git branch -M main
 git push -u origin main
 ```
-
 
 ## Optional: Publish DevContainer images
 
