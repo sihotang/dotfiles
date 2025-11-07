@@ -60,9 +60,9 @@ for line in docs_readme.splitlines():
         if file.lower().endswith('.md'):
             file = file[:-3]
         items.append((title, file))
-sidebar = ['# Documentation', '', '- [Home](Home)']
+sidebar = ['# Documentation', '', '- [[Home]]']
 for title, file in items:
-    sidebar.append(f"- [{title}]({file})")
+    sidebar.append(f"- [[{title}|{file}]]")
 out = '\n'.join(sidebar) + '\n'
 (repo_root / 'wiki' / '_Sidebar.md').write_text(out, encoding='utf-8')
 print(f"Wrote _Sidebar.md with {len(items)} items")
