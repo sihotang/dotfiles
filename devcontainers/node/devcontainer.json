@@ -1,0 +1,11 @@
+{
+  "name": "Node DevContainer (sihotang)",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "vscode",
+  "settings": {
+    "terminal.integrated.shell.linux": "/bin/zsh"
+  },
+  "postCreateCommand": "chezmoi apply"
+}
