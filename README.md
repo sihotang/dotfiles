@@ -30,3 +30,15 @@ docker build devcontainers/node -t ghcr.io/sihotang/devcontainer-node:latest
 ## 📚 Documentation
 
 See [docs/README.md](docs/README.md) for the full handbook.
+
+## 🧩 Sync docs to GitHub Wiki
+
+Sync the `docs/` folder into the repository Wiki pages:
+
+```bash
+bin/sync-wiki.sh
+```
+
+Notes:
+- Maps `docs/README.md` to `Home.md` on the Wiki.
+- Requires `remote.origin.url` to be set to the GitHub repo.

@@ -1,0 +1,82 @@
+name: Sync Docs to Wiki
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Clone wiki
+        run: |
+          git clone "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git" wiki
+
+      - name: Clean wiki pages (keep special files)
+        run: |
+          find wiki -maxdepth 1 -type f -name "*.md" \
+            ! -name "_Sidebar.md" \
+            ! -name "_Footer.md" \
+            ! -name "_Header.md" \
+            ! -name "Home.md" \
+            -exec rm -f {} +
+
+      - name: Copy docs to wiki
+        run: |
+          # Map README.md -> Home.md, copy others as-is
+          cp docs/README.md wiki/Home.md
+          shopt -s nullglob
+          for f in docs/*.md; do
+            base=$(basename "$f")
+            [ "$base" = "README.md" ] && continue
+            cp "$f" "wiki/$base"
+          done
+          shopt -u nullglob
+
+      - name: Generate _Sidebar.md from docs/README.md
+        run: |
+          python3 - << 'PY'
+import re, pathlib, sys
+repo_root = pathlib.Path('.').resolve()
+docs_readme = (repo_root / 'docs' / 'README.md').read_text(encoding='utf-8')
+items = []
+for line in docs_readme.splitlines():
+    m = re.match(r"\s*\d+\. \[(.+?)\]\((.+?)\)", line)
+    if m:
+        title, file = m.groups()
+        if file.lower().endswith('.md'):
+            file = file[:-3]
+        items.append((title, file))
+sidebar = ['# Documentation', '', '- [Home](Home)']
+for title, file in items:
+    sidebar.append(f"- [{title}]({file})")
+out = '\n'.join(sidebar) + '\n'
+(repo_root / 'wiki' / '_Sidebar.md').write_text(out, encoding='utf-8')
+print(f"Wrote _Sidebar.md with {len(items)} items")
+PY
+
+      - name: Commit and push changes
+        run: |
+          cd wiki
+          if [ -n "$(git status --porcelain)" ]; then
+            git add .
+            git commit -m "chore(wiki): sync from docs with sidebar on $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            git push
+          else
+            echo "No changes to sync."
+          fi
+
+
