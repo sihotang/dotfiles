@@ -1,0 +1,346 @@
+# EditorConfig is awesome: https://EditorConfig.org
+# https://editorconfig.org
+
+# top-most EditorConfig file
+root = true
+
+# Unix-style newlines with a newline ending every file
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# ============================================================================
+# Markup & Documentation
+# ============================================================================
+
+# Markdown files (preserve trailing whitespace for line breaks)
+[*.md]
+trim_trailing_whitespace = false
+indent_size = 2
+
+# HTML files
+[*.{html,htm}]
+indent_size = 2
+
+# XML files
+[*.xml]
+indent_size = 2
+
+# ============================================================================
+# Configuration Files
+# ============================================================================
+
+# YAML files
+[*.{yml,yaml}]
+indent_size = 2
+
+# JSON files
+[*.json]
+indent_size = 2
+
+# JSON5 files
+[*.json5]
+indent_size = 2
+
+# TOML files
+[*.toml]
+indent_size = 2
+
+# INI files
+[*.{ini,conf,config}]
+indent_size = 2
+
+# EditorConfig files
+[.editorconfig]
+indent_size = 2
+
+# Git config
+[.gitconfig*]
+indent_size = 2
+
+# ============================================================================
+# JavaScript/TypeScript/Web
+# ============================================================================
+
+# JavaScript/TypeScript files
+[*.{js,jsx,ts,tsx,mjs,cjs}]
+indent_size = 2
+
+# Vue files
+[*.vue]
+indent_size = 2
+
+# JSON files (package.json, etc.)
+[package.json]
+indent_size = 2
+
+[package-lock.json]
+indent_size = 2
+
+# ============================================================================
+# Stylesheets
+# ============================================================================
+
+# CSS/SCSS/SASS files
+[*.{css,scss,sass}]
+indent_size = 2
+
+# Less files
+[*.less]
+indent_size = 2
+
+# ============================================================================
+# Python
+# ============================================================================
+
+# Python files
+[*.py]
+indent_size = 4
+max_line_length = 88
+
+# Python setup files
+[setup.py]
+indent_size = 4
+
+# Python requirements files
+[requirements*.txt]
+trim_trailing_whitespace = false
+
+# ============================================================================
+# Go
+# ============================================================================
+
+# Go files
+[*.go]
+indent_style = tab
+indent_size = 4
+
+# Go mod files
+[go.mod]
+indent_size = 2
+
+[go.sum]
+trim_trailing_whitespace = false
+
+# ============================================================================
+# Rust
+# ============================================================================
+
+# Rust files
+[*.rs]
+indent_size = 4
+
+# Cargo files
+[Cargo.toml]
+indent_size = 2
+
+[Cargo.lock]
+indent_size = 2
+
+# ============================================================================
+# Java
+# ============================================================================
+
+# Java files
+[*.java]
+indent_size = 4
+
+# Kotlin files
+[*.kt]
+indent_size = 4
+
+# Gradle files
+[*.gradle]
+indent_size = 4
+
+[*.gradle.kts]
+indent_size = 4
+
+# ============================================================================
+# C/C++
+# ============================================================================
+
+# C/C++ files
+[*.{c,cpp,cc,cxx,h,hpp,hxx}]
+indent_size = 4
+
+# ============================================================================
+# .NET
+# ============================================================================
+
+# C# files
+[*.cs]
+indent_size = 4
+indent_style = space
+
+# F# files
+[*.{fs,fsx,fsi}]
+indent_size = 4
+
+# VB.NET files
+[*.vb]
+indent_size = 4
+
+# Razor files (CSHTML)
+[*.cshtml]
+indent_size = 2
+
+# Razor files (VBHTML)
+[*.vbhtml]
+indent_size = 2
+
+# XAML files
+[*.xaml]
+indent_size = 2
+
+# .NET project files
+[*.{csproj,fsproj,vbproj}]
+indent_size = 2
+
+# MSBuild files
+[*.{props,targets}]
+indent_size = 2
+
+# Solution files
+[*.sln]
+indent_size = 2
+
+# Resource files
+[*.resx]
+indent_size = 2
+
+# App/Web config files
+[*.config]
+indent_size = 2
+
+# User-specific project files (usually generated)
+[*.csproj.user]
+indent_size = 2
+
+# ============================================================================
+# PHP
+# ============================================================================
+
+# PHP files
+[*.php]
+indent_size = 4
+
+# Composer files
+[composer.json]
+indent_size = 2
+
+[composer.lock]
+indent_size = 2
+
+# ============================================================================
+# Ruby
+# ============================================================================
+
+# Ruby files
+[*.rb]
+indent_size = 2
+
+# Gemfile
+[Gemfile]
+indent_size = 2
+
+[Gemfile.lock]
+trim_trailing_whitespace = false
+
+# Rakefile
+[Rakefile]
+indent_size = 2
+
+# ============================================================================
+# Shell Scripts
+# ============================================================================
+
+# Shell scripts
+[*.{sh,bash,zsh}]
+indent_size = 2
+
+# ============================================================================
+# Build Files
+# ============================================================================
+
+# Makefile (must use tabs)
+[Makefile]
+indent_style = tab
+
+[makefile]
+indent_style = tab
+
+# Dockerfile
+[Dockerfile*]
+indent_size = 2
+
+# Docker Compose
+[docker-compose*.{yml,yaml}]
+indent_size = 2
+
+# ============================================================================
+# SQL
+# ============================================================================
+
+# SQL files
+[*.sql]
+indent_size = 2
+
+# ============================================================================
+# Other Languages
+# ============================================================================
+
+# Lua files
+[*.lua]
+indent_size = 2
+
+# R files
+[*.r]
+indent_size = 2
+
+# Swift files
+[*.swift]
+indent_size = 4
+
+# Scala files
+[*.scala]
+indent_size = 2
+
+# Clojure files
+[*.{clj,cljs,cljc,edn}]
+indent_size = 2
+
+# Elixir files
+[*.{ex,exs}]
+indent_size = 2
+
+# ============================================================================
+# Lock Files & Generated Files
+# ============================================================================
+
+# Lock files (preserve exact formatting)
+[*.lock]
+trim_trailing_whitespace = false
+
+# Minified files
+[*.min.{js,css}]
+trim_trailing_whitespace = false
+insert_final_newline = false
+
+# ============================================================================
+# Windows Files
+# ============================================================================
+
+# Batch files (Windows - use CRLF)
+[*.{bat,cmd}]
+end_of_line = crlf
+
+# PowerShell files
+[*.ps1]
+end_of_line = crlf
+indent_size = 4
+
