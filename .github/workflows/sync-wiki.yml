@@ -34,38 +34,44 @@ jobs:
             ! -name "Home.md" \
             -exec rm -f {} +
 
-      - name: Copy docs to wiki
-        run: |
-          # Map README.md -> Home.md, copy others as-is
-          cp docs/README.md wiki/Home.md
-          shopt -s nullglob
-          for f in docs/*.md; do
-            base=$(basename "$f")
-            [ "$base" = "README.md" ] && continue
-            cp "$f" "wiki/$base"
-          done
-          shopt -u nullglob
-
-      - name: Generate _Sidebar.md from docs/README.md
+      - name: Copy docs to wiki and generate sidebar
         run: |
           python3 - << 'PY'
-import re, pathlib, sys
-repo_root = pathlib.Path('.').resolve()
-docs_readme = (repo_root / 'docs' / 'README.md').read_text(encoding='utf-8')
-items = []
-for line in docs_readme.splitlines():
-    m = re.match(r"\s*\d+\. \[(.+?)\]\((.+?)\)", line)
-    if m:
-        title, file = m.groups()
-        if file.lower().endswith('.md'):
-            file = file[:-3]
-        items.append((title, file))
-sidebar = ['# Documentation', '', '- [[Home]]']
-for title, file in items:
-    sidebar.append(f"- [[{title}|{file}]]")
-out = '\n'.join(sidebar) + '\n'
-(repo_root / 'wiki' / '_Sidebar.md').write_text(out, encoding='utf-8')
-print(f"Wrote _Sidebar.md with {len(items)} items")
+from pathlib import Path
+repo_root = Path('.').resolve()
+docs = repo_root / 'docs'
+wiki = repo_root / 'wiki'
+
+# Mapping from docs files to legacy wiki page filenames and titles
+mapping = [
+    (docs/'README.md', 'Home.md', 'Home'),
+    (docs/'01-introduction.md', 'Introduction.md', 'Introduction'),
+    (docs/'02-chezmoi-setup.md', 'ChezMoi-Setup.md', 'ChezMoi Setup'),
+    (docs/'03-devcontainers-overview.md', 'DevContainers-Overview.md', 'DevContainers Overview'),
+    (docs/'04-language-containers.md', 'Language-Containers.md', 'Language Containers (Node, Python, Go)'),
+    (docs/'05-using-project-dockerfiles.md', 'Using-Project-Dockerfiles.md', 'Using DevContainers with Project Dockerfiles'),
+    (docs/'06-troubleshooting.md', 'Troubleshooting.md', 'Troubleshooting'),
+    (docs/'07-github-publishing.md', 'GitHub-Publishing.md', 'GitHub Publishing'),
+    (docs/'08-library-and-scripts.md', 'Library-Functions-and-Scripts.md', 'Library Functions and Scripts'),
+    (docs/'09-customization.md', 'Customization-Guide.md', 'Customization Guide'),
+]
+
+# Write pages
+for src, dest, _ in mapping:
+    if src.exists():
+        (wiki / dest).write_text(src.read_text(encoding='utf-8'), encoding='utf-8')
+
+# Sidebar
+lines = ['# Documentation', '']
+for _, dest, title in mapping:
+    page = dest[:-3]  # strip .md
+    if title == 'Home':
+        lines.append(f'- [[Home|{page}]]')
+    else:
+        lines.append(f'- [[{title}|{page}]]')
+
+(wiki / '_Sidebar.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
+print('Synced pages and generated _Sidebar.md')
 PY
 
       - name: Commit and push changes
