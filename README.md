@@ -14,12 +14,12 @@ sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply sihotang
 | `/lib` | Reusable shell helpers (install, os, git, log) |
 | `/bin` | Automation scripts |
 | `/docs` | Complete developer handbook |
-| `/.devcontainers` | Multi-language development containers |
+| `/devcontainers` | Multi-language development containers |
 
 ## 🐳 Using DevContainers
 Open in VS Code → **Reopen in Container**
 ```bash
-docker build .devcontainers/node -t ghcr.io/sihotang/devcontainer-node:latest
+docker build devcontainers/node -t ghcr.io/sihotang/devcontainer-node:latest
 ```
 
 ## 📚 Documentation

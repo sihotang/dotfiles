@@ -3,7 +3,7 @@
 tmp/
 .cache/
 .vscode/
-.devcontainer/
+devcontainers/
 .envrc
 .env
 *.log
