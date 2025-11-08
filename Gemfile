@@ -1,9 +1,10 @@
 source "https://rubygems.org"
 
-gem "jekyll", "~> 4.3"
-gem "jekyll-theme-minimal"
-gem "jekyll-relative-links"
+# Use github-pages gem which includes all built-in themes
+gem "github-pages", group: :jekyll_plugins
 
-# Uncomment to use remote themes:
-# gem "jekyll-remote-theme"
+# Or use individual gems (uncomment if not using github-pages):
+# gem "jekyll", "~> 4.3"
+# gem "jekyll-theme-minimal"
+# gem "jekyll-relative-links"
 

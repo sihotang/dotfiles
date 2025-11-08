@@ -36,10 +36,14 @@ jobs:
           bundler-cache-path: vendor/bundle
 
       - name: Install dependencies
-        run: bundle install
+        run: |
+          bundle config path vendor/bundle
+          bundle install
 
       - name: Build with Jekyll
-        run: bundle exec jekyll build --source docs --destination _site
+        run: |
+          cd docs
+          bundle exec jekyll build --destination ../_site
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
