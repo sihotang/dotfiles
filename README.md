@@ -30,7 +30,9 @@ docker build devcontainers/node -t ghcr.io/sihotang/devcontainer-node:latest
 
 ## 📚 Documentation
 
-See [docs/README.md](docs/README.md) for the full handbook.
+📖 **Full documentation is available on the [GitHub Wiki](https://github.com/sihotang/dotfiles/wiki)**
+
+For local viewing, see [docs/README.md](docs/README.md).
 
 ## 🧩 Sync docs to GitHub Wiki
 
