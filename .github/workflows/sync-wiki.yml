@@ -38,12 +38,11 @@ jobs:
         run: |
           python3 << 'PY'
           from pathlib import Path
-          from textwrap import dedent
-          exec(dedent('''
+          
           repo_root = Path('.').resolve()
           docs = repo_root / 'docs'
           wiki = repo_root / 'wiki'
-
+          
           # Mapping from docs files to legacy wiki page filenames and titles
           mapping = [
               (docs / 'README.md', 'Home.md', 'Home'),
@@ -57,12 +56,12 @@ jobs:
               (docs / '08-library-and-scripts.md', 'Library-Functions-and-Scripts.md', 'Library Functions and Scripts'),
               (docs / '09-customization.md', 'Customization-Guide.md', 'Customization Guide'),
           ]
-
+          
           # Write pages
           for src, dest, _ in mapping:
               if src.exists():
                   (wiki / dest).write_text(src.read_text(encoding='utf-8'), encoding='utf-8')
-
+          
           # Sidebar
           lines = ['# Documentation', '']
           for _, dest, title in mapping:
@@ -71,10 +70,9 @@ jobs:
                   lines.append(f'- [[Home|{page}]]')
               else:
                   lines.append(f'- [[{title}|{page}]]')
-
+          
           (wiki / '_Sidebar.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
           print('Synced pages and generated _Sidebar.md')
-          '''))
           PY
 
       - name: Commit and push changes
