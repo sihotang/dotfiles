@@ -1,6 +1,7 @@
 # 🧠 Dotfiles & DevContainer Handbook
 
 Welcome to your **personal developer environment guide**.
+
 This documentation explains how to install, customize, and use your chezmoi-based dotfiles and reusable DevContainer setups.
 
 ## 📚 Contents
