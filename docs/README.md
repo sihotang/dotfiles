@@ -6,15 +6,15 @@ This documentation explains how to install, customize, and use your chezmoi-base
 
 ## 📚 Contents
 
-1. [[Introduction]]
-2. [[ChezMoi-Setup|ChezMoi Setup]]
-3. [[DevContainers-Overview|DevContainers Overview]]
-4. [[Language-Containers|Language Containers (Node, Python, Go, .NET)]]
-5. [[Using-Project-Dockerfiles|Using DevContainers with Project Dockerfiles]]
-6. [[Troubleshooting]]
-7. [[GitHub-Publishing|GitHub Publishing]]
-8. [[Library-Functions-and-Scripts|Library Functions and Scripts]]
-9. [[Customization-Guide|Customization Guide]]
+1. [Introduction](01-introduction.md)
+2. [ChezMoi Setup](02-chezmoi-setup.md)
+3. [DevContainers Overview](03-devcontainers-overview.md)
+4. [Language Containers (Node, Python, Go, .NET)](04-language-containers.md)
+5. [Using DevContainers with Project Dockerfiles](05-using-project-dockerfiles.md)
+6. [Troubleshooting](06-troubleshooting.md)
+7. [GitHub Publishing](07-github-publishing.md)
+8. [Library Functions and Scripts](08-library-and-scripts.md)
+9. [Customization Guide](09-customization.md)
 
 ## 🔗 Quick Start
 

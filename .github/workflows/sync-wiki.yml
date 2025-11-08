@@ -38,6 +38,7 @@ jobs:
         run: |
           python3 << 'PY'
           from pathlib import Path
+          import re
           
           repo_root = Path('.').resolve()
           docs = repo_root / 'docs'
@@ -57,10 +58,32 @@ jobs:
               (docs / '09-customization.md', 'Customization-Guide.md', 'Customization Guide'),
           ]
           
-          # Write pages
-          for src, dest, _ in mapping:
+          # Create reverse mapping for link conversion (doc file -> wiki page name)
+          doc_to_wiki = {}
+          for src, dest, title in mapping:
               if src.exists():
-                  (wiki / dest).write_text(src.read_text(encoding='utf-8'), encoding='utf-8')
+                  doc_name = src.name
+                  wiki_name = dest[:-3]  # strip .md
+                  doc_to_wiki[doc_name] = wiki_name
+          
+          # Write pages and convert links
+          for src, dest, title in mapping:
+              if src.exists():
+                  content = src.read_text(encoding='utf-8')
+                  
+                  # Convert markdown links to wiki links
+                  for doc_file, wiki_page in doc_to_wiki.items():
+                      # Pattern: [text](doc_file) -> [[text|wiki_page]] or [[wiki_page]]
+                      pattern = r'\[([^\]]+)\]\(([^)]*' + re.escape(doc_file) + r')\)'
+                      def replace_link(match):
+                          link_text = match.group(1)
+                          if link_text == wiki_page or link_text.lower() == wiki_page.lower():
+                              return f'[[{wiki_page}]]'
+                          else:
+                              return f'[[{link_text}|{wiki_page}]]'
+                      content = re.sub(pattern, replace_link, content)
+                  
+                  (wiki / dest).write_text(content, encoding='utf-8')
           
           # Sidebar
           lines = ['# Documentation', '']
