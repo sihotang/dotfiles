@@ -14,7 +14,7 @@ theme: jekyll-theme-minimal
 #   - jekyll-remote-theme
 
 baseurl: ""
-url: "https://sihotang.github.io/dotfiles"
+url: "https://sihotang.github.io"
 
 plugins:
   - jekyll-relative-links
