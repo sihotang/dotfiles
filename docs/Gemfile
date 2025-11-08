@@ -1,0 +1,5 @@
+source "https://rubygems.org"
+
+# Use github-pages gem which includes all built-in themes
+gem "github-pages", group: :jekyll_plugins
+
