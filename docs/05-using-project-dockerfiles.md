@@ -1,10 +1,12 @@
 # 🧩 Using DevContainers with Project Dockerfiles
 
-There are three common approaches for integrating your dotfiles setup with project-specific Dockerfiles:
+There are three common approaches for integrating your dotfiles setup with
+project-specific Dockerfiles:
 
 ## 1. Extend the Project Dockerfile
 
-Create a `.devcontainer/Dockerfile` that extends your project's Dockerfile and adds chezmoi:
+Create a `.devcontainer/Dockerfile` that extends your project's Dockerfile and
+adds chezmoi:
 
 ```dockerfile
 FROM your-project-image:latest
@@ -106,6 +108,7 @@ Use in `.devcontainer/devcontainer.json`:
 
 ## Which Approach to Use?
 
-- **Approach 1**: Best when you want to keep project Dockerfiles separate from dotfiles setup
+- **Approach 1**: Best when you want to keep project Dockerfiles separate from
+  dotfiles setup
 - **Approach 2**: Best for quick iteration and when you frequently change dotfiles
 - **Approach 3**: Best when you want a single Dockerfile for both dev and production

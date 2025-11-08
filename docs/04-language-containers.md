@@ -28,7 +28,8 @@ Example build:
 docker build devcontainers/python -t ghcr.io/sihotang/devcontainer-python:latest
 ```
 
-**Note**: For specific Python versions, consider using `pyenv` or official Python images.
+**Note**: For specific Python versions, consider using `pyenv` or official
+Python images.
 
 ## Go
 
@@ -42,4 +43,20 @@ Example build:
 docker build devcontainers/go -t ghcr.io/sihotang/devcontainer-go:latest
 ```
 
-**Note**: For specific Go versions, modify the Dockerfile to install from golang.org or use official Go images.
+**Note**: For specific Go versions, modify the Dockerfile to install from
+golang.org or use official Go images.
+
+## .NET
+
+- **Path**: `devcontainers/dotnet`
+- **Includes**: .NET SDK 8.0 (via Microsoft package repository), zsh, git, chezmoi
+- **Best for**: C# applications, ASP.NET Core, .NET development
+
+Example build:
+
+```bash
+docker build devcontainers/dotnet -t ghcr.io/sihotang/devcontainer-dotnet:latest
+```
+
+**Note**: For specific .NET versions, modify the `DOTNET_VERSION` build arg in
+the Dockerfile.

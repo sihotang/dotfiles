@@ -5,7 +5,7 @@ DevContainers provide containerized, reproducible dev environments.
 ## Base concept
 
 - `devcontainers/base` contains the shared foundation (chezmoi, zsh, git)
-- Language folders (`node`, `python`, `go`) extend the base
+- Language folders (`node`, `python`, `go`, `dotnet`) extend the base
 
 ## Usage
 

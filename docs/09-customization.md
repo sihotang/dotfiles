@@ -7,11 +7,13 @@ Learn how to customize and extend your dotfiles setup.
 ### Using Chezmoi
 
 1. **Add an existing file**:
+
    ```bash
    chezmoi add ~/.yourfile
    ```
 
 2. **Create a new dotfile**:
+
    ```bash
    chezmoi add ~/.newfile
    # Edit the source file
@@ -19,6 +21,7 @@ Learn how to customize and extend your dotfiles setup.
    ```
 
 3. **Apply changes**:
+
    ```bash
    chezmoi apply
    ```
@@ -36,11 +39,13 @@ Templates allow you to customize files per machine without committing sensitive 
 ### Creating a Template
 
 1. Add a file as template:
+
    ```bash
    chezmoi add --template ~/.gitconfig
    ```
 
 2. Edit the template (use `{{ }}` syntax):
+
    ```ini
    [user]
      name = {{ .git.name }}
@@ -48,6 +53,7 @@ Templates allow you to customize files per machine without committing sensitive 
    ```
 
 3. Set template data:
+
    ```bash
    chezmoi data set git.name "Your Name"
    chezmoi data set git.email "your@email.com"
@@ -75,17 +81,20 @@ API_KEY={{ .myapp.api_key }}
 ## Modifying Existing Dotfiles
 
 1. **Edit the source file**:
+
    ```bash
    chezmoi edit ~/.zshrc
    ```
 
 2. **Or edit directly in the source directory**:
+
    ```bash
    cd ~/.local/share/chezmoi
    # Edit files directly
    ```
 
 3. **Apply changes**:
+
    ```bash
    chezmoi apply
    ```
@@ -95,17 +104,20 @@ API_KEY={{ .myapp.api_key }}
 ### Adding to `bin/`
 
 1. Create your script:
+
    ```bash
    touch bin/my-script.sh
    chmod +x bin/my-script.sh
    ```
 
 2. Make it available via chezmoi:
+
    ```bash
    chezmoi add bin/my-script.sh
    ```
 
 3. Optionally, add to PATH in your shell config:
+
    ```bash
    # In ~/.zshrc
    export PATH="$HOME/bin:$PATH"
@@ -120,7 +132,7 @@ Your scripts can use the library functions from `lib/`:
 set -e
 
 # Source libraries
-for file in "$(dirname "$0")"/../lib/*.sh; do 
+for file in "$(dirname "$0")"/../lib/*.sh; do
   [ -f "$file" ] && source "$file"
 done
 
@@ -148,11 +160,13 @@ RUN apt update && apt install -y \
 ### Creating a New Language Container
 
 1. Create a new directory:
+
    ```bash
    mkdir devcontainers/rust
    ```
 
 2. Create `Dockerfile`:
+
    ```dockerfile
    FROM mcr.microsoft.com/devcontainers/base:ubuntu
    RUN apt update && apt install -y \
@@ -165,6 +179,7 @@ RUN apt update && apt install -y \
    ```
 
 3. Create `devcontainer.json`:
+
    ```json
    {
      "name": "Rust DevContainer (sihotang)",
@@ -183,7 +198,7 @@ RUN apt update && apt install -y \
 
 ### Recommended Structure
 
-```
+```text
 ~/.local/share/chezmoi/
 ├── dot_zshrc              # Shell config
 ├── dot_gitconfig.tmpl     # Git config (template)
@@ -203,7 +218,7 @@ RUN apt update && apt install -y \
 
 Create `.chezmoiignore` in your source directory:
 
-```
+```text
 *.swp
 *.bak
 .DS_Store
@@ -214,16 +229,19 @@ Create `.chezmoiignore` in your source directory:
 ### Workflow
 
 1. **Make changes locally**:
+
    ```bash
    chezmoi edit ~/.zshrc
    ```
 
 2. **Test the changes**:
+
    ```bash
    chezmoi apply
    ```
 
 3. **Commit and push**:
+
    ```bash
    cd ~/.local/share/chezmoi
    git add .
@@ -232,6 +250,7 @@ Create `.chezmoiignore` in your source directory:
    ```
 
 Or use the sync script:
+
 ```bash
 ./bin/sync-dotfiles.sh
 ```
@@ -241,6 +260,7 @@ Or use the sync script:
 ### Using Different Configs Per Machine
 
 1. **Use templates with hostname detection**:
+
    ```bash
    # In template file
    {{ if eq .hostname "work-laptop" }}
@@ -251,16 +271,18 @@ Or use the sync script:
    ```
 
 2. **Use different data per machine**:
+
    ```bash
    # On work machine
    chezmoi data set work.email "work@company.com"
-   
+
    # On personal machine
    chezmoi data set work.email "personal@gmail.com"
    ```
 
 3. **Use `.chezmoiignore`** for machine-specific files:
-   ```
+
+   ```text
    dot_local_config
    ```
 
@@ -275,7 +297,7 @@ Or use the sync script:
 
 ## Removing Dotfiles
 
-### Remove a file from chezmoi management:
+### Remove a file from chezmoi management
 
 ```bash
 chezmoi remove ~/.oldfile
@@ -284,10 +306,9 @@ chezmoi apply
 
 This removes the file from your home directory and from chezmoi source.
 
-### Keep file but stop managing it:
+### Keep file but stop managing it
 
 ```bash
 chezmoi forget ~/.file
 # File stays in home directory but is no longer managed
 ```
-

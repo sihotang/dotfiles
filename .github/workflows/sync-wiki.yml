@@ -50,7 +50,7 @@ jobs:
               (docs / '01-introduction.md', 'Introduction.md', 'Introduction'),
               (docs / '02-chezmoi-setup.md', 'ChezMoi-Setup.md', 'ChezMoi Setup'),
               (docs / '03-devcontainers-overview.md', 'DevContainers-Overview.md', 'DevContainers Overview'),
-              (docs / '04-language-containers.md', 'Language-Containers.md', 'Language Containers (Node, Python, Go)'),
+              (docs / '04-language-containers.md', 'Language-Containers.md', 'Language Containers (Node, Python, Go, .NET)'),
               (docs / '05-using-project-dockerfiles.md', 'Using-Project-Dockerfiles.md', 'Using DevContainers with Project Dockerfiles'),
               (docs / '06-troubleshooting.md', 'Troubleshooting.md', 'Troubleshooting'),
               (docs / '07-github-publishing.md', 'GitHub-Publishing.md', 'GitHub Publishing'),

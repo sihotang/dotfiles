@@ -17,6 +17,7 @@ echo "You can now build language-specific containers:"
 echo "  docker build -t sihotang/devcontainer-go:latest ${SCRIPT_DIR}/go"
 echo "  docker build -t sihotang/devcontainer-node:latest ${SCRIPT_DIR}/node"
 echo "  docker build -t sihotang/devcontainer-python:latest ${SCRIPT_DIR}/python"
+echo "  docker build -t sihotang/devcontainer-dotnet:latest ${SCRIPT_DIR}/dotnet"
 echo ""
 echo "Or build all language containers:"
 echo "  $0 --all"
@@ -33,6 +34,9 @@ if [[ "$1" == "--all" ]]; then
     
     echo "  Building Python container..."
     docker build -t sihotang/devcontainer-python:latest "${SCRIPT_DIR}/python"
+    
+    echo "  Building .NET container..."
+    docker build -t sihotang/devcontainer-dotnet:latest "${SCRIPT_DIR}/dotnet"
     
     echo ""
     echo "✅ All containers built successfully!"

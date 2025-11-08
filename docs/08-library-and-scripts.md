@@ -11,6 +11,7 @@ The `lib/` folder contains modular shell functions that can be sourced in your s
 Provides installation helpers:
 
 - **`install_chezmoi()`** — Installs chezmoi if not already present
+
   ```bash
   source lib/install.sh
   install_chezmoi
@@ -34,6 +35,7 @@ setup_gitignore
 OS detection utilities:
 
 - **`detect_os()`** — Returns "macos", "linux", or "unknown"
+
   ```bash
   source lib/os.sh
   OS=$(detect_os)
@@ -62,28 +64,34 @@ log_error "Failed to install package"
 Quick git configuration script. Sets up basic git user name and email.
 
 **Usage:**
+
 ```bash
 ./bin/git-setup.sh
 ```
 
-**Note**: You may want to customize this script or use chezmoi templates for git config instead.
+**Note**: You may want to customize this script or use chezmoi templates for
+git config instead.
 
 ### `bin/sync-dotfiles.sh`
 
-Synchronizes dotfiles from your home directory back to the chezmoi source, commits, and pushes.
+Synchronizes dotfiles from your home directory back to the chezmoi source,
+commits, and pushes.
 
 **Usage:**
+
 ```bash
 ./bin/sync-dotfiles.sh
 ```
 
 **What it does:**
+
 1. Adds new/modified files to chezmoi: `chezmoi add ~`
 2. Applies changes: `chezmoi apply`
 3. Commits to git: `git add . && git commit -m "Update dotfiles"`
 4. Pushes to remote: `git push`
 
-**Note**: Make sure you're in the dotfiles repository directory and have git remote configured.
+**Note**: Make sure you're in the dotfiles repository directory and have git
+remote configured.
 
 ## Using Libraries in Your Scripts
 
@@ -114,4 +122,3 @@ log_info "Installation complete!"
 ```
 
 This pattern is used in `install.sh` at the root of the repository.
-

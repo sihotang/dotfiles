@@ -1,6 +1,6 @@
 # DevContainers Overview
 
-Includes Node, Python, Go, and Base images preconfigured with chezmoi.
+Includes Node, Python, Go, .NET, and Base images preconfigured with chezmoi.
 
 ## Structure
 
@@ -8,17 +8,21 @@ Includes Node, Python, Go, and Base images preconfigured with chezmoi.
 - `go/` - Extends base, adds Go toolchain
 - `node/` - Extends base, adds Node.js
 - `python/` - Extends base, adds Python
+- `dotnet/` - Extends base, adds .NET SDK
 
 ## Published Images
 
-All containers are automatically built and published to GitHub Container Registry (GHCR):
+All containers are automatically built and published to GitHub Container
+Registry (GHCR):
 
 - `ghcr.io/sihotang/devcontainer-base:latest` - Base container
 - `ghcr.io/sihotang/devcontainer-go:latest` - Go container
 - `ghcr.io/sihotang/devcontainer-node:latest` - Node.js container
 - `ghcr.io/sihotang/devcontainer-python:latest` - Python container
+- `ghcr.io/sihotang/devcontainer-dotnet:latest` - .NET container
 
-Images are automatically published when changes are pushed to the `devcontainers/` directory.
+Images are automatically published when changes are pushed to the
+`devcontainers/` directory.
 
 **View published images**: <https://github.com/sihotang?tab=packages>
 
@@ -34,9 +38,12 @@ Images are automatically published when changes are pushed to the `devcontainers
    cp -r devcontainers/node .devcontainer
    # or
    cp -r devcontainers/python .devcontainer
+   # or
+   cp -r devcontainers/dotnet .devcontainer
    ```
 
-2. The `devcontainer.json` is already configured to use the published image from GHCR
+2. The `devcontainer.json` is already configured to use the published image
+   from GHCR
 3. Open in VS Code and select "Reopen in Container"
 
 The published images will be automatically pulled from GHCR - no local build required!
@@ -52,6 +59,7 @@ docker pull ghcr.io/sihotang/devcontainer-base:latest
 docker pull ghcr.io/sihotang/devcontainer-go:latest
 docker pull ghcr.io/sihotang/devcontainer-node:latest
 docker pull ghcr.io/sihotang/devcontainer-python:latest
+docker pull ghcr.io/sihotang/devcontainer-dotnet:latest
 ```
 
 ## Building Locally (Optional)
@@ -80,9 +88,11 @@ docker build -t sihotang/devcontainer-base:latest devcontainers/base
 docker build -t sihotang/devcontainer-go:latest devcontainers/go
 docker build -t sihotang/devcontainer-node:latest devcontainers/node
 docker build -t sihotang/devcontainer-python:latest devcontainers/python
+docker build -t sihotang/devcontainer-dotnet:latest devcontainers/dotnet
 ```
 
-If building locally, update `devcontainer.json` to use the build configuration instead of the image:
+If building locally, update `devcontainer.json` to use the build configuration
+instead of the image:
 
 ```json
 {

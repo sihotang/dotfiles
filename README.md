@@ -2,7 +2,8 @@
 
 A complete, modular, cross-platform setup for developers.
 
-Includes **chezmoi**, **zsh**, and **DevContainers** for Node, Python, and Go.
+Includes **chezmoi**, **zsh**, and **DevContainers** for Node, Python, Go,
+and .NET.
 
 ## 🚀 Quick Start
 
@@ -40,5 +41,6 @@ bin/sync-wiki.sh
 ```
 
 Notes:
+
 - Maps `docs/README.md` to `Home.md` on the Wiki.
 - Requires `remote.origin.url` to be set to the GitHub repo.

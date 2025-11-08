@@ -1,0 +1,11 @@
+{
+  "name": ".NET DevContainer (sihotang)",
+  "image": "ghcr.io/sihotang/devcontainer-dotnet:latest",
+  "remoteUser": "vscode",
+  "settings": {
+    "terminal.integrated.defaultProfile.linux": "zsh"
+  },
+  "postCreateCommand": "chezmoi init --apply sihotang || chezmoi apply",
+  "features": {}
+}
+
