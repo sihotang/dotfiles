@@ -1,0 +1,11 @@
+title: Dotfiles & DevContainer Handbook
+description: Complete developer environment guide for chezmoi-based dotfiles and DevContainers
+theme: jekyll-theme-minimal
+baseurl: ""
+url: "https://sihotang.github.io"
+plugins:
+  - jekyll-relative-links
+relative_links:
+  enabled: true
+  collections: true
+

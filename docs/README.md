@@ -1,3 +1,8 @@
+---
+layout: default
+title: Home
+---
+
 # 🧠 Dotfiles & DevContainer Handbook
 
 Welcome to your **personal developer environment guide**.
