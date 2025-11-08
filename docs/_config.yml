@@ -1,11 +1,27 @@
 title: Dotfiles & DevContainer Handbook
 description: Complete developer environment guide for chezmoi-based dotfiles and DevContainers
+
+# Theme Configuration
+# Built-in themes: jekyll-theme-minimal, jekyll-theme-cayman, jekyll-theme-dinky,
+#                  jekyll-theme-hacker, jekyll-theme-leap-day, jekyll-theme-merlot,
+#                  jekyll-theme-midnight, jekyll-theme-minimal, jekyll-theme-modernist,
+#                  jekyll-theme-slate, jekyll-theme-tactile, jekyll-theme-time-machine
 theme: jekyll-theme-minimal
+
+# Or use a remote theme (uncomment to use):
+# remote_theme: pages-themes/minimal
+# plugins:
+#   - jekyll-remote-theme
+
 baseurl: ""
 url: "https://sihotang.github.io"
+
 plugins:
   - jekyll-relative-links
+
 relative_links:
   enabled: true
   collections: true
 
+# Theme customization
+# You can add custom CSS in assets/css/style.scss
