@@ -29,4 +29,8 @@ sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply sihotang
 
 ## 🐳 To start developing
 
-Open any project in VS Code → **“Reopen in Container”**
+Open any project in VS Code → **"Reopen in Container"**
+
+---
+
+*Documentation deployed via GitHub Pages*
