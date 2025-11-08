@@ -1,15 +1,10 @@
 {
   "name": "Python DevContainer (sihotang)",
-  "build": {
-    "dockerfile": "Dockerfile",
-    "context": ".",
-    "args": {
-      "BASE_IMAGE": "sihotang/devcontainer-base:latest"
-    }
-  },
+  "image": "ghcr.io/sihotang/devcontainer-python:latest",
   "remoteUser": "vscode",
   "settings": {
     "terminal.integrated.defaultProfile.linux": "zsh"
   },
-  "postCreateCommand": "chezmoi init --apply sihotang || chezmoi apply"
+  "postCreateCommand": "chezmoi init --apply sihotang || chezmoi apply",
+  "features": {}
 }

@@ -9,7 +9,66 @@ Includes Node, Python, Go, and Base images preconfigured with chezmoi.
 - `node/` - Extends base, adds Node.js
 - `python/` - Extends base, adds Python
 
-## Building
+## Published Images
+
+All containers are automatically built and published to GitHub Container Registry (GHCR):
+
+- `ghcr.io/sihotang/devcontainer-base:latest` - Base container
+- `ghcr.io/sihotang/devcontainer-go:latest` - Go container
+- `ghcr.io/sihotang/devcontainer-node:latest` - Node.js container
+- `ghcr.io/sihotang/devcontainer-python:latest` - Python container
+
+Images are automatically published when changes are pushed to the `devcontainers/` directory.
+
+**View published images**: <https://github.com/sihotang?tab=packages>
+
+## Using Published Images (Recommended)
+
+### In VS Code DevContainers
+
+1. Copy a language devcontainer to your project's `.devcontainer/` directory:
+
+   ```bash
+   cp -r devcontainers/go .devcontainer
+   # or
+   cp -r devcontainers/node .devcontainer
+   # or
+   cp -r devcontainers/python .devcontainer
+   ```
+
+2. The `devcontainer.json` is already configured to use the published image from GHCR
+3. Open in VS Code and select "Reopen in Container"
+
+The published images will be automatically pulled from GHCR - no local build required!
+
+### Pulling Images Manually
+
+```bash
+# Login to GHCR (if pulling private images)
+echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+
+# Pull images
+docker pull ghcr.io/sihotang/devcontainer-base:latest
+docker pull ghcr.io/sihotang/devcontainer-go:latest
+docker pull ghcr.io/sihotang/devcontainer-node:latest
+docker pull ghcr.io/sihotang/devcontainer-python:latest
+```
+
+## Building Locally (Optional)
+
+If you want to build containers locally or customize them:
+
+### Using the Build Script
+
+```bash
+# Build base only
+./devcontainers/build.sh
+
+# Build base and all language containers
+./devcontainers/build.sh --all
+```
+
+### Manual Build
 
 Language containers extend from the base container. Build the base first:
 
@@ -23,26 +82,25 @@ docker build -t sihotang/devcontainer-node:latest devcontainers/node
 docker build -t sihotang/devcontainer-python:latest devcontainers/python
 ```
 
-Or use the build script:
+If building locally, update `devcontainer.json` to use the build configuration instead of the image:
 
-```bash
-# Build base only
-./devcontainers/build.sh
-
-# Build base and all language containers
-./devcontainers/build.sh --all
+```json
+{
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".",
+    "args": {
+      "BASE_IMAGE": "sihotang/devcontainer-base:latest"
+    }
+  }
+}
 ```
 
-## Using in VS Code
+## CI/CD
 
-1. Open a project in VS Code
-2. Copy a language devcontainer to `.devcontainer/`:
+Images are automatically built and published via GitHub Actions when:
 
-   ```bash
-   cp -r devcontainers/go .devcontainer
-   ```
+- Changes are pushed to `devcontainers/**` files
+- Manual workflow dispatch is triggered
 
-3. Make sure base container is built first (see Building above)
-4. Reopen in Container (VS Code command palette)
-
-The language containers will automatically use the base container as their foundation.
+See `.github/workflows/publish-devcontainers.yml` for details.
