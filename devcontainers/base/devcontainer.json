@@ -1,11 +1,12 @@
 {
   "name": "Base DevContainer (sihotang)",
   "build": {
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "context": "."
   },
   "remoteUser": "vscode",
   "settings": {
     "terminal.integrated.defaultProfile.linux": "zsh"
   },
-  "postCreateCommand": "chezmoi apply"
+  "postCreateCommand": "chezmoi init --apply sihotang || chezmoi apply"
 }
