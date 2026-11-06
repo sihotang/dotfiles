@@ -1,18 +1,35 @@
+#!/usr/bin/env zsh
+
 # Navigation and file listings
 alias ..="cd .."
 alias ...="cd ../.."
+alias ....="cd ../../.."
+alias la="ls -A"
 alias ll="ls -lah"
 
 # Git shortcuts
+alias ga="git add"
 alias gs="git status --short --branch"
 alias gd="git diff"
+alias gds="git diff --staged"
+alias gb="git branch"
+alias gco="git checkout"
+alias gcm="git commit -m"
 alias gl="git log --oneline --graph --decorate -15"
+alias gpl="git pull --ff-only"
+alias gp="git push"
+
+# System shortcuts
+alias dfh="df -h"
+
+# Shell shortcuts
+alias reload="source ~/.zshrc"
 
 # Docker shortcuts
 alias dps="docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'"
 alias dcu="docker compose up -d"
 alias dcd="docker compose down"
 
-# Development shortcuts
-alias dev="cd ~/Development"
+# Path shortcuts
+alias ws="cd ~/Workspace"
 alias c="claude"

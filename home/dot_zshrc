@@ -16,3 +16,6 @@ fi
 
 # Aliases
 [[ -f "$HOME/.aliases" ]] && source "$HOME/.aliases"
+
+# Shell functions
+[[ -f "$HOME/.functions" ]] && source "$HOME/.functions"

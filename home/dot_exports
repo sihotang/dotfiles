@@ -1,3 +1,5 @@
+#!/usr/bin/env zsh
+
 # Keep PATH entries unique and put user-installed tools ahead of system tools.
 typeset -U path PATH
 path=(
