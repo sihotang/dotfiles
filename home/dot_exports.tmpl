@@ -13,20 +13,7 @@ typeset -U path PATH
 if [[ -n ${OLLAMA_HOST:-} ]]; then
   export OLLAMA_HOST
 elif (( $+commands[ollama] )); then
-  export OLLAMA_HOST="0.0.0.0:11434"
+  export OLLAMA_HOST={{ .ollamaHost | default "127.0.0.1:11434" | quote }}
 fi
 
-# Prefer the first installed editor in this order.
-if (( $+commands[code] )); then
-  EDITOR='code --wait'
-elif (( $+commands[cursor] )); then
-  EDITOR='cursor --wait'
-elif (( $+commands[vim] )); then
-  EDITOR='vim'
-else
-  EDITOR='vi'
-fi
-
-export EDITOR
-export VISUAL="$EDITOR"
-export GIT_EDITOR="$EDITOR"
+{{ template "shell/editor.tmpl" . -}}

@@ -22,6 +22,18 @@ chezmoi apply
 
 Edit files under `home/`, then run `chezmoi diff` and `chezmoi apply`.
 
+Machine-specific values are read from the local chezmoi config, which is not
+stored in this repository. For example, add these values to
+`~/.config/chezmoi/chezmoi.toml`:
+
+```toml
+[data]
+ollamaHost = "127.0.0.1:11434"
+workspaceDir = "Workspace"
+```
+
+The templates default to these values when a key is not set.
+
 ## Contents
 
 - Zsh startup files, aliases, and environment exports

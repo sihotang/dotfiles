@@ -1,0 +1,12 @@
+# Prefer VS Code; use Vim or vi when its CLI is unavailable.
+if (( $+commands[code] )); then
+  EDITOR='code --wait'
+elif (( $+commands[vim] )); then
+  EDITOR='vim'
+else
+  EDITOR='vi'
+fi
+
+export EDITOR
+export VISUAL="$EDITOR"
+export GIT_EDITOR="$EDITOR"

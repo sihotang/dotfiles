@@ -26,10 +26,12 @@ alias dfh="df -h"
 alias reload="source ~/.zshrc"
 
 # Docker shortcuts
-alias dps="docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'"
+alias dps="docker ps --format 'table {{ "{{" }}.Names{{ "}}" }}\t{{ "{{" }}.Status{{ "}}" }}\t{{ "{{" }}.Ports{{ "}}" }}'"
 alias dcu="docker compose up -d"
 alias dcd="docker compose down"
 
 # Path shortcuts
-alias ws="cd ~/Workspace"
+ws() {
+  builtin cd -- "$HOME"/{{ .workspaceDir | default "Workspace" | quote }}
+}
 alias c="claude"
