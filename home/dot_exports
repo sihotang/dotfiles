@@ -10,5 +10,24 @@ path=(
 )
 
 # Application settings
-export OLLAMA_HOST="0.0.0.0:11434"
-export EDITOR="code --wait"
+# Keep a configured Ollama host and port; set a default only when Ollama exists.
+if [[ -n ${OLLAMA_HOST:-} ]]; then
+  export OLLAMA_HOST
+elif (( $+commands[ollama] )); then
+  export OLLAMA_HOST="0.0.0.0:11434"
+fi
+
+# Prefer the first installed editor in this order.
+if (( $+commands[code] )); then
+  EDITOR='code --wait'
+elif (( $+commands[cursor] )); then
+  EDITOR='cursor --wait'
+elif (( $+commands[vim] )); then
+  EDITOR='vim'
+else
+  EDITOR='vi'
+fi
+
+export EDITOR
+export VISUAL="$EDITOR"
+export GIT_EDITOR="$EDITOR"
