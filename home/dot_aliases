@@ -1,0 +1,21 @@
+# Navigation and file listings
+alias ..="cd .."
+alias ...="cd ../.."
+alias ll="ls -lah"
+
+# Git shortcuts
+alias gs="git status --short --branch"
+alias gd="git diff"
+alias gl="git log --oneline --graph --decorate -15"
+
+# Docker shortcuts
+alias dps="docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'"
+alias dcu="docker compose up -d"
+alias ddown="docker compose down"
+alias dcd="cd ~/Docker/databases && docker compose"
+alias dcn="cd ~/Docker/n8n && docker compose"
+alias dco="cd ~/Docker/openhands && docker compose"
+
+# Development shortcuts
+alias dev="cd ~/Development"
+alias c="claude"

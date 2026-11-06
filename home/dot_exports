@@ -1,0 +1,12 @@
+# Keep PATH entries unique and put user-installed tools ahead of system tools.
+typeset -U path PATH
+path=(
+  "$HOME/.lmstudio/bin"
+  "$HOME/.local/bin"
+  "$HOME/.orbstack/bin"
+  $path
+)
+
+# Application settings
+export OLLAMA_HOST="0.0.0.0:11434"
+export EDITOR="code --wait"

@@ -1,0 +1,17 @@
+#!/usr/bin/env zsh
+
+# Environment exports
+[[ -f "$HOME/.exports" ]] && source "$HOME/.exports"
+
+# --- RUNTIME & PATH SETUP ---
+# Node.js (fnm)
+if (( $+commands[fnm] )); then
+  eval "$(fnm env --use-on-cd)"
+fi
+
+# Python (uv)
+[[ -f "$HOME/.local/bin/env" ]] && source "$HOME/.local/bin/env"
+
+# Aliases
+[[ -f "$HOME/.aliases" ]] && source "$HOME/.aliases"
+
