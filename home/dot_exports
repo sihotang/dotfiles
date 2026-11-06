@@ -2,12 +2,11 @@
 
 # Keep PATH entries unique and put user-installed tools ahead of system tools.
 typeset -U path PATH
-path=(
-  "$HOME/.lmstudio/bin"
-  "$HOME/.local/bin"
-  "$HOME/.orbstack/bin"
-  $path
-)
+
+# Add optional tool paths only when installed on this machine.
+[[ -d "$HOME/.orbstack/bin" ]] && path=("$HOME/.orbstack/bin" $path)
+[[ -d "$HOME/.local/bin" ]] && path=("$HOME/.local/bin" $path)
+[[ -d "$HOME/.lmstudio/bin" ]] && path=("$HOME/.lmstudio/bin" $path)
 
 # Application settings
 # Keep a configured Ollama host and port; set a default only when Ollama exists.
