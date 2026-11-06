@@ -39,6 +39,7 @@ The templates default to these values when a key is not set.
 - Zsh startup files, aliases, and environment exports
 - Git configuration and global ignore patterns
 - Vim and npm configuration
+- Personal Claude Code, Cline, Continue, Cursor, GitHub Copilot, Gemini, and Codex instructions
 
 Machine-specific Git settings can go in `~/.gitconfig.local`; it is included
 by the managed `~/.gitconfig` and is intentionally kept outside this repository.
