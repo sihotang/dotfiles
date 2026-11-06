@@ -37,7 +37,7 @@ The templates default to these values when a key is not set.
 ## Contents
 
 - Zsh startup files, aliases, and environment exports
-- Git configuration and global ignore patterns
+- Git and GitHub CLI configuration, plus global ignore patterns
 - Vim and npm configuration
 - Personal Claude Code, Cline, Continue, Cursor, GitHub Copilot, Gemini, and Codex instructions
 
