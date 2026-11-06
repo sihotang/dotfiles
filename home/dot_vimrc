@@ -1,0 +1,31 @@
+" Basic editing
+set nocompatible
+syntax on
+filetype plugin indent on
+set number
+set ruler
+set mouse=a
+
+" Indentation
+set expandtab
+set shiftwidth=2
+set softtabstop=2
+set tabstop=2
+set autoindent
+set smartindent
+
+" Search and completion
+set ignorecase
+set smartcase
+set incsearch
+set hlsearch
+set wildmenu
+
+" Editing behavior
+set backspace=indent,eol,start
+set hidden
+set encoding=utf-8
+set fileencoding=utf-8
+set endofline
+set list
+set listchars=tab:»·,trail:·,extends:›,precedes:‹
