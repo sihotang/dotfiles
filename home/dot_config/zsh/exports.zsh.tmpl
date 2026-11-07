@@ -13,7 +13,7 @@ typeset -U path PATH
 if [[ -n ${OLLAMA_HOST:-} ]]; then
   export OLLAMA_HOST
 elif (( $+commands[ollama] )); then
-  export OLLAMA_HOST={{ .ollamaHost | default "127.0.0.1:11434" | quote }}
+  export OLLAMA_HOST={{ .ollamaHost | quote }}
 fi
 
 {{ template "shell/editor.tmpl" . -}}

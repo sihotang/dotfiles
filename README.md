@@ -38,7 +38,9 @@ To run the script from a local clone, change to its root directory and run
 The `.chezmoiroot` file tells chezmoi that `home/` contains the managed source
 files. Filename attributes such as `dot_`, `private_`, and `.tmpl` control how
 files are named, protected, and rendered when installed. For example,
-`home/dot_zshrc` becomes `~/.zshrc`.
+`home/dot_zshrc` becomes `~/.zshrc`, and files under
+`home/dot_config/zsh/` become modular Zsh configuration under `~/.config/zsh/`.
+The `.zshrc` entry point loads those modules directly.
 
 ## Everyday use
 
@@ -58,9 +60,9 @@ home directory are managed outputs.
 
 ## Machine-specific settings
 
-Keep per-machine values in `~/.config/chezmoi/chezmoi.toml`, outside this
-repository. The templates provide defaults, so this file is optional. For
-example:
+Shared template defaults live in `home/.chezmoidata.yaml`. Override them with
+per-machine values in `~/.config/chezmoi/chezmoi.toml`, outside this repository.
+For example:
 
 ```toml
 [data]
@@ -72,9 +74,9 @@ workspaceDir = "Workspace"
 `workspaceDir` sets the directory opened by the workspace alias, relative to
 your home directory.
 
-Machine-specific Git settings belong in `~/.gitconfig.local`. The managed
-`~/.gitconfig` includes that file if it exists; keep it local and out of this
-repository.
+Git settings live under `home/dot_config/git/` and are included by the managed
+`~/.gitconfig`. Machine-specific Git settings belong in `~/.gitconfig.local`;
+keep that file local and out of this repository.
 
 ## Checks
 
@@ -87,10 +89,10 @@ make check
 
 The target performs these checks in order:
 
-1. Renders `~/.aliases`, `~/.exports`, and `~/.gemini/settings.json` with
-   `chezmoi cat` into a temporary directory.
+1. Renders the Zsh aliases and exports modules and `~/.gemini/settings.json`
+   with `chezmoi cat` into a temporary directory.
 2. Checks zsh syntax for `home/dot_zprofile`, `home/dot_zshrc`,
-   `home/dot_functions`, and the rendered aliases and exports.
+   `home/dot_config/zsh/functions.zsh`, and the rendered aliases and exports.
 3. Parses the rendered Gemini settings as JSON with Python's standard library.
 4. Runs `git diff --check` to catch whitespace errors in tracked changes.
 5. Prints `chezmoi diff` so you can review how the source differs from the
