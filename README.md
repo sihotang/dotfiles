@@ -1,20 +1,30 @@
 # Personal dotfiles
 
 This repository manages personal shell, command-line, editor, and AI assistant
-configuration with [chezmoi](https://www.chezmoi.io/). It uses zsh for its
-bootstrap script and shell configuration.
+configuration with [chezmoi](https://www.chezmoi.io/). Its shell configuration
+uses Zsh.
 
 ## Getting started
 
-Run the zsh setup script directly from GitHub:
+On macOS, Linux, or WSL, run the POSIX shell setup script directly from GitHub:
 
-```zsh
-zsh -c "$(curl -fsSL https://raw.githubusercontent.com/sihotang/dotfiles/main/setup.sh)"
+```sh
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/sihotang/dotfiles/main/setup.sh)"
 ```
 
-The script installs chezmoi with Homebrew if needed, initializes this
-repository, previews the changes, and asks before applying them. It requires
-zsh, curl, and Git; it does not install Homebrew.
+On native Windows, run the PowerShell setup script:
+
+```powershell
+powershell -NoProfile -Command "Invoke-Expression (Invoke-RestMethod 'https://raw.githubusercontent.com/sihotang/dotfiles/main/setup.ps1')"
+```
+
+Each script installs chezmoi to a user-local directory if needed, initializes
+this repository, previews the changes, and asks before applying them. Git is
+required. On macOS, the shell script uses Homebrew when available and otherwise
+installs chezmoi to `~/.local/bin`; it also requires `curl` for the fallback.
+The PowerShell script uses PowerShell's web request support. The managed shell
+configuration is for Zsh; on Windows, use WSL if you want to use that shell
+configuration.
 
 If chezmoi is already installed and you prefer to manage the steps yourself,
 initialize the repository directly:
@@ -30,8 +40,14 @@ chezmoi diff
 chezmoi apply
 ```
 
-To run the script from a local clone, change to its root directory and run
-`./setup.sh`. It uses that checkout as the chezmoi source.
+To run the scripts from a local clone, change to its root directory and run
+`./setup.sh` on macOS, Linux, or WSL. On Windows, run:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1
+```
+
+The scripts use that checkout as the chezmoi source.
 
 ## How the source is organized
 
