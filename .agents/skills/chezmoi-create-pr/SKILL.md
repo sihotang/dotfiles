@@ -1,6 +1,6 @@
 ---
 name: chezmoi-create-pr
-description: Use whenever changing this repository's chezmoi dotfiles, shell setup, Git configuration, templates, or managed application settings. After implementing a requested change, run the repository check, review the chezmoi diff, apply the intended changes to the user's home directory, and create or update a pull request. Treat requests to add, edit, remove, reorganize, or fix this repository's configuration as a match, even if the user does not name the skill.
+description: Use when the user invokes this skill or asks to create or update a PR for a chezmoi configuration change in this repository. Run repository checks, review the chezmoi diff, apply intended home targets, and publish a PR.
 ---
 
 # Change, apply, and open a PR
