@@ -101,6 +101,8 @@ The target performs these checks in order:
 
 The command needs chezmoi, zsh, Python 3, and Git. It does not apply changes;
 review the final chezmoi diff and use `chezmoi apply` when you are ready.
+GitHub Actions runs this check for pull requests targeting `main` and pushes to
+`main`.
 
 ## Contents
 
