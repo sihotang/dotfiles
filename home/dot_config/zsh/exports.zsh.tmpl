@@ -16,4 +16,6 @@ elif (( $+commands[ollama] )); then
   export OLLAMA_HOST={{ .ollamaHost | quote }}
 fi
 
-{{ template "shell/editor.tmpl" . -}}
+export EDITOR={{ .editor | quote }}
+export VISUAL="$EDITOR"
+export GIT_EDITOR="$EDITOR"
