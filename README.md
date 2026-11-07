@@ -62,7 +62,8 @@ home directory are managed outputs.
 
 Shared template defaults live in `home/.chezmoidata.yaml`. Override them with
 per-machine values in `~/.config/chezmoi/chezmoi.toml`, outside this repository.
-For example:
+The `home/.chezmoi.toml.tmpl` seeds local `[data]` values for the detected
+hostname and operating system. Add or override other values locally, for example:
 
 ```toml
 [data]
