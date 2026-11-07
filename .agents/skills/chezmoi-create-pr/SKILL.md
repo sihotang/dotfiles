@@ -1,5 +1,5 @@
 ---
-name: chezmoi-change-pr
+name: chezmoi-create-pr
 description: Use whenever changing this repository's chezmoi dotfiles, shell setup, Git configuration, templates, or managed application settings. After implementing a requested change, run the repository check, review the chezmoi diff, apply the intended changes to the user's home directory, and create or update a pull request. Treat requests to add, edit, remove, reorganize, or fix this repository's configuration as a match, even if the user does not name the skill.
 ---
 
