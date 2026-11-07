@@ -17,7 +17,7 @@ fi
 if [[ -f "$script_dir/.chezmoiroot" ]]; then
   source_args=(--source "$script_dir")
 else
-  chezmoi init soparsio/dotfiles
+  chezmoi init sihotang/dotfiles
 fi
 
 print -- 'Previewing dotfile changes:'

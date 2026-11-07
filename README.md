@@ -9,7 +9,7 @@ bootstrap script and shell configuration.
 Run the zsh setup script directly from GitHub:
 
 ```zsh
-zsh -c "$(curl -fsSL https://raw.githubusercontent.com/soparsio/dotfiles/main/setup.sh)"
+zsh -c "$(curl -fsSL https://raw.githubusercontent.com/sihotang/dotfiles/main/setup.sh)"
 ```
 
 The script installs chezmoi with Homebrew if needed, initializes this
@@ -20,7 +20,7 @@ If chezmoi is already installed and you prefer to manage the steps yourself,
 initialize the repository directly:
 
 ```sh
-chezmoi init soparsio/dotfiles
+chezmoi init sihotang/dotfiles
 ```
 
 Then preview and apply:
