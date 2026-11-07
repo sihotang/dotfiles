@@ -32,6 +32,6 @@ alias dcd="docker compose down"
 
 # Path shortcuts
 ws() {
-  builtin cd -- "$HOME"/{{ .workspaceDir | default "Workspace" | quote }}
+  builtin cd -- "$HOME"/{{ .workspaceDir | quote }}
 }
 alias c="claude"

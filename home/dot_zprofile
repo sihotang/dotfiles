@@ -8,5 +8,5 @@ elif [[ -x /usr/local/bin/brew ]]; then
 fi
 
 # Load environment settings for login shells after Homebrew updates PATH.
-[[ -f "$HOME/.exports" ]] && source "$HOME/.exports"
+[[ -f "$HOME/.config/zsh/exports.zsh" ]] && source "$HOME/.config/zsh/exports.zsh"
 typeset -g _DOT_ENV_LOADED=1

@@ -1,8 +1,3 @@
 [include]
     path = ~/.gitconfig.local
-
-[core]
-    editor = code --wait
-    excludesfile = ~/.gitignore
-[init]
-    defaultBranch = main
+    path = ~/.config/git/config

@@ -2,7 +2,7 @@
 
 # Load environment settings for shells that are interactive but not login shells.
 if [[ -z ${_DOT_ENV_LOADED:-} ]]; then
-  [[ -f "$HOME/.exports" ]] && source "$HOME/.exports"
+  [[ -f "$HOME/.config/zsh/exports.zsh" ]] && source "$HOME/.config/zsh/exports.zsh"
   typeset -g _DOT_ENV_LOADED=1
 fi
 
@@ -14,8 +14,8 @@ fi
 [[ -f "$HOME/.local/bin/env" ]] && source "$HOME/.local/bin/env"
 [[ -r "$HOME/.orbstack/shell/init.zsh" ]] && source "$HOME/.orbstack/shell/init.zsh" 2>/dev/null || :
 
-# Aliases
-[[ -f "$HOME/.aliases" ]] && source "$HOME/.aliases"
-
-# Shell functions
-[[ -f "$HOME/.functions" ]] && source "$HOME/.functions"
+# Load modular Zsh configuration.
+for file in "$HOME/.config/zsh"/*.zsh(N); do
+  [[ "$file" == "$HOME/.config/zsh/exports.zsh" ]] && continue
+  source "$file"
+done
