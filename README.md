@@ -72,7 +72,8 @@ workspaceDir = "Workspace"
 
 `ollamaHost` configures the Ollama host used by the environment exports.
 `workspaceDir` sets the directory opened by the workspace alias, relative to
-your home directory.
+your home directory. `editor` sets the default editor for Zsh and Git; it
+defaults to `code --wait`.
 
 Git settings live under `home/dot_config/git/` and are included by the managed
 `~/.gitconfig`. Machine-specific Git settings belong in `~/.gitconfig.local`;

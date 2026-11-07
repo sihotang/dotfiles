@@ -2,3 +2,4 @@
 # ~/.config/chezmoi/chezmoi.toml file.
 ollamaHost: 127.0.0.1:11434
 workspaceDir: Workspace
+editor: "code --wait"
