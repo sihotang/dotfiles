@@ -21,7 +21,7 @@ $sourceArgs = @()
 if (Test-Path (Join-Path $scriptDir '.chezmoiroot')) {
     $sourceArgs = @('--source', $scriptDir)
 } else {
-    & $chezmoiPath init 'sihotang/dotfiles'
+    & $chezmoiPath init 'soparsio/dotfiles'
     if ($LASTEXITCODE -ne 0) { throw 'chezmoi init failed' }
 }
 
