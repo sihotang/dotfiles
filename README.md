@@ -9,13 +9,13 @@ uses Zsh.
 On macOS, Linux, or WSL, run the POSIX shell setup script directly from GitHub:
 
 ```sh
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/sihotang/dotfiles/main/setup.sh)"
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/soparsio/dotfiles/main/setup.sh)"
 ```
 
 On native Windows, run the PowerShell setup script:
 
 ```powershell
-powershell -NoProfile -Command "Invoke-Expression (Invoke-RestMethod 'https://raw.githubusercontent.com/sihotang/dotfiles/main/setup.ps1')"
+powershell -NoProfile -Command "Invoke-Expression (Invoke-RestMethod 'https://raw.githubusercontent.com/soparsio/dotfiles/main/setup.ps1')"
 ```
 
 Each script installs chezmoi to a user-local directory if needed, initializes
@@ -30,7 +30,7 @@ If chezmoi is already installed and you prefer to manage the steps yourself,
 initialize the repository directly:
 
 ```sh
-chezmoi init sihotang/dotfiles
+chezmoi init soparsio/dotfiles
 ```
 
 Then preview and apply:

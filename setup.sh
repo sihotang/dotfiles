@@ -30,7 +30,7 @@ if ! command -v chezmoi >/dev/null 2>&1; then
 fi
 
 if [ ! -f "$script_dir/.chezmoiroot" ]; then
-  chezmoi init sihotang/dotfiles
+  chezmoi init soparsio/dotfiles
   use_local_source=false
 else
   use_local_source=true
