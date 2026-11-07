@@ -58,6 +58,17 @@ files are named, protected, and rendered when installed. For example,
 `home/dot_config/zsh/` become modular Zsh configuration under `~/.config/zsh/`.
 The `.zshrc` entry point loads those modules directly.
 
+## Platform compatibility
+
+On macOS, Linux, and WSL, GitHub CLI settings go to `~/.config/gh/`. On native
+Windows, they go to `%APPDATA%\GitHub CLI\config.yml`; Vim uses `_vimrc`
+instead of `.vimrc`. Zsh files are managed on Windows as well, and `.zshrc`
+loads Oh My Zsh when it is installed. Oh My Zsh requires Zsh; on Windows, WSL 2
+is recommended, while Cygwin or MSYS2 are alternatives. Native Windows setup
+does not install either. If using Cygwin or MSYS2, ensure Zsh and chezmoi use
+the same home directory. WSL uses Linux paths and needs no separate Windows
+path configuration.
+
 ## Everyday use
 
 Run these commands from the repository root to preview or apply updates:
