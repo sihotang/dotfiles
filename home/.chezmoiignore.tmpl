@@ -1,0 +1,9 @@
+{{ if eq .chezmoi.os "windows" }}
+.config/gh/
+.config/gh/**
+.vimrc
+{{ else }}
+AppData/
+AppData/**
+_vimrc
+{{ end }}
