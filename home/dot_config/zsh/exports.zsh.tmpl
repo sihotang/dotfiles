@@ -9,13 +9,13 @@ typeset -U path PATH
 [[ -d "$HOME/.lmstudio/bin" ]] && path=("$HOME/.lmstudio/bin" $path)
 
 # Application settings
-# Keep a configured Ollama host and port; set a default only when Ollama exists.
 if [[ -n ${OLLAMA_HOST:-} ]]; then
   export OLLAMA_HOST
-elif (( $+commands[ollama] )); then
+elif command -v ollama >/dev/null 2>&1; then
   export OLLAMA_HOST={{ .ollamaHost | quote }}
 fi
 
 export EDITOR={{ .editor | quote }}
 export VISUAL="$EDITOR"
 export GIT_EDITOR="$EDITOR"
+export ATUIN_CONFIG_DIR="$HOME/.config/atuin"

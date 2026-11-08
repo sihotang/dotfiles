@@ -111,7 +111,10 @@ your home directory. `editor` sets the default editor for Zsh and Git; it
 defaults to `code --wait`.
 
 Global mise settings live in `~/.config/mise/config.toml`; Node.js `24.21.0` is
-the configured default, and mise updates itself automatically.
+the configured default, and mise updates itself automatically. Starship's
+prompt settings live in `~/.config/starship.toml`, and Atuin settings live in
+`~/.config/atuin/config.toml`. The Zsh integration sets `ATUIN_CONFIG_DIR` to
+that Atuin directory. The existing `~/.atuin/config.toml` is left untouched.
 
 Git settings live under `home/dot_config/git/` and are included by the managed
 `~/.gitconfig`. Machine-specific Git settings belong in `~/.gitconfig.local`;
@@ -144,7 +147,8 @@ GitHub Actions runs this check for pull requests targeting `main` and pushes to
 
 ## Contents
 
-- Zsh startup files, aliases, shell functions, and environment exports
+- Zsh startup files, aliases, shell functions, environment exports, and Atuin
+  shell integration
 - Git and GitHub CLI configuration, plus global ignore patterns
 - Vim and npm configuration
 - Personal instructions for Claude Code, Cline, Continue, Cursor, GitHub
