@@ -1,14 +1,28 @@
 # Shared global mise configuration.
-# Add default tool versions under [tools] and shared variables under [env].
+# Runtime versions and global CLI tools managed by mise.
+[tools]
+node = "24.21.0"
+bun = "latest"
+go = "latest"
+python = "3.15.2"
+
+# AI CLIs use mise's npm backend with Bun as the installer.
+"npm:@openai/codex" = "latest"
+"npm:@anthropic-ai/claude-code" = { version = "latest", bun_args = "--trust" }
+"npm:@google/gemini-cli" = "latest"
+"npm:@github/copilot" = { version = "latest", bun_args = "--trust" }
+
+[settings]
+# Install missing configured tools when a command needs them.
+auto_install = true
+# Read each tool's native version files such as .nvmrc and .python-version.
+idiomatic_version_file_enable_tools = ["node", "bun", "go", "python"]
+# Remove partial install directories after a failed installation.
+always_keep_install = false
+
 [settings.self_update]
 auto = true
 
-[settings]
-npm.package_manager = "npm"
-
-[tools]
-node = "24.21.0"
-"npm:@openai/codex" = "latest"
-"npm:@anthropic-ai/claude-code" = { version = "latest", allow_builds = ["@anthropic-ai/claude-code"] }
-"npm:@google/gemini-cli" = "latest"
-"npm:@github/copilot" = { version = "latest", allow_builds = ["@github/copilot"] }
+[settings.npm]
+# Use Bun to install tools declared with the npm: backend.
+package_manager = "bun"

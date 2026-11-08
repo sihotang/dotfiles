@@ -3,7 +3,9 @@
 set -eu
 
 if command -v mise >/dev/null 2>&1; then
-  mise install
+  mise install bun
+  mise exec bun -- mise install
 elif [ -x "$HOME/.local/bin/mise" ]; then
-  "$HOME/.local/bin/mise" install
+  "$HOME/.local/bin/mise" install bun
+  "$HOME/.local/bin/mise" exec bun -- "$HOME/.local/bin/mise" install
 fi
