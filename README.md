@@ -111,8 +111,12 @@ your home directory. `editor` sets the default editor for Zsh and Git; it
 defaults to `code --wait`.
 
 Global mise settings live in `~/.config/mise/config.toml`; Node.js `24.21.0` is
-the configured default, and mise updates itself automatically. Starship's
-prompt settings live in `~/.config/starship.toml`, and Atuin settings live in
+the configured default, and mise updates itself automatically. Codex CLI,
+Claude Code, Gemini CLI, and GitHub Copilot CLI are installed globally through
+npm, managed as mise npm tools. After applying the config, chezmoi runs
+`mise install` to install configured tools. It runs again when the mise config
+changes. Starship's prompt settings live in
+`~/.config/starship.toml`, and Atuin settings live in
 `~/.config/atuin/config.toml`. The Zsh integration sets `ATUIN_CONFIG_DIR` to
 that Atuin directory. The existing `~/.atuin/config.toml` is left untouched.
 Ghostty is installed as a Homebrew cask on macOS, with its config at
@@ -128,83 +132,81 @@ Git settings live under `home/dot_config/git/` and are included by the managed
 `~/.gitconfig`. Machine-specific Git settings belong in `~/.gitconfig.local`;
 keep that file local and out of this repository.
 
-## Codex accounts
+## Profiles for multiple assistant CLIs
 
-The main Codex account always uses `~/.codex` (the default `CODEX_HOME`).
-Additional accounts each get an isolated profile directory with its own
-`auth.json`, `config.toml`, and an `AGENTS.md` symlink that points to the
-shared `~/.codex/AGENTS.md`.
-
-### Setting up accounts
-
-Add your account names to the local `~/.config/chezmoi/chezmoi.toml` on each
-machine (keep this file out of the repository):
+Configure a map of profile names to the assistant CLIs and VS Code extensions
+enabled for each profile in the machine-local `~/.config/chezmoi/chezmoi.toml`:
 
 ```toml
 [data]
-codexProfilesDir = "codex-profiles"
-codexAccounts = ["personal", "work", "client"]
+profilesDir = ".config/profiles"
+
+[data.profiles]
+work = ["codex", "vscode"]
+personal = ["codex", "claude", "copilot", "gemini", "antigravity", "vscode"]
 ```
 
-Run `chezmoi apply` to create the profile directories under
-`~/codex-profiles/<name>/`. Each directory is populated with a stub
-`config.toml` (edit it to set a model, approval policy, or other overrides)
-and an `AGENTS.md` symlink to `~/.codex/AGENTS.md`. Run `codex login` from
-each profile to authenticate independently:
+This creates directories such as `~/.config/profiles/work/codex/` and
+`~/.config/profiles/personal/<cli>/`. Run `chezmoi apply` to create them and
+seed shared instructions. A profile mapped to an empty tool list is removed
+from `~/.config/profiles/` on apply. Profile settings and state stay outside
+the repo.
+
+Sign in to each CLI under the profile you want to use:
 
 ```sh
-CODEX_HOME=~/codex-profiles/work codex login
+codex-work
+codex-personal
+claude-personal
+copilot-personal
+gemini-personal
+code-work .
+code-personal .
+ai-use codex personal --help
 ```
 
-#### XDG base directory
+`ai-use TOOL PROFILE [arguments…]` is the general launcher. The generated
+`<tool>-<profile>` shortcuts are equivalent. Plain CLI commands continue to
+use their normal configuration directories. Gemini stores its files in a
+`.gemini/` directory inside the profile's Gemini directory.
 
-To store profiles under the XDG data directory (`~/.local/share/codex/`),
-set `codexProfilesDir` to the XDG-relative path instead:
+`code-<profile>` launches VS Code with the matching native VS Code profile and
+environment paths for the CLI tools listed in that profile. VS Code keeps its
+usual shared user data, so its primary sign-in is available across profiles;
+profile-specific settings and extension selections remain managed by VS Code.
+Select extensions in VS Code's Profile Editor. Copy them from Default when
+creating a profile if desired; chezmoi does not install or synchronize VS Code
+extensions. The integrated terminal and CLI-backed extensions inherit
+environment paths for the selected CLI profile.
 
-```toml
-[data]
-codexProfilesDir = ".local/share/codex"
-codexAccounts = ["personal", "work"]
-```
+Arguments passed to `code-<profile>` go directly to VS Code; the launcher does
+not create profile-specific workspace files. Fully quit every VS Code window
+before switching launchers: VS Code takes environment variables from its first
+running instance, so another profile opened while it is still running can keep
+the first profile's `CODEX_HOME`.
 
-### Switching accounts
+Add `antigravity` to a profile's agent list to enable Google's Antigravity
+extension there; it is a VS Code extension toggle and does not create a CLI
+launcher.
 
-When `codexAccounts` is set, the shell provides these helpers:
+Codex profile settings live in
+`~/.config/profiles/<profile>/codex/config.toml`. The setup links the shared
+Codex `AGENTS.md`, Claude `CLAUDE.md`, Copilot instructions, and Gemini
+instructions/settings when present. VS Code uses its native profile store;
+`code-<profile>` opens that profile and creates an empty one on first use if
+the name does not exist yet.
 
-| Command | Description |
-| --- | --- |
-| `codex` | Runs with the default `~/.codex` (main account) |
-| `codex-<name>` | Runs with `~/codex-profiles/<name>/` as `CODEX_HOME` |
-| `codex-use <name> [args…]` | Explicit account switch with error checking |
-| `codex-pick [args…]` | Interactive fzf picker over configured accounts |
+Copilot CLI reads its settings and local state from `COPILOT_HOME`, but its
+OAuth credential may be held in the operating system keychain. Separate
+`COPILOT_HOME` directories therefore isolate configuration and state; they may
+not provide separate GitHub sign-ins on every platform. `GH_TOKEN`,
+`GITHUB_TOKEN`, or `COPILOT_GITHUB_TOKEN` can also override its stored OAuth
+login, so keep any such credentials outside this repository.
 
-For example:
-
-```sh
-codex-work                             # open Codex under the work profile
-codex-use personal "refactor auth"     # run a prompt under a named account
-codex-pick                             # choose interactively with fzf
-```
-
-### Customizing a profile
-
-Edit `~/codex-profiles/<name>/config.toml` directly. Settings here overlay
-`~/.codex/config.toml`. Common overrides:
-
-```toml
-# ~/codex-profiles/work/config.toml
-model = "o4-mini"
-approval_policy = "on-request"
-```
-
-To use custom instructions for a specific account, replace its `AGENTS.md`
-symlink with a real file:
-
-```sh
-unlink ~/codex-profiles/work/AGENTS.md
-cp ~/.codex/AGENTS.md ~/codex-profiles/work/AGENTS.md
-# now edit ~/codex-profiles/work/AGENTS.md
-```
+Claude Code also notes an authentication exception: separate config
+directories isolate most logins, but Console sign-ins without an API key may
+be stored outside that directory. Check the CLI's authentication behavior for
+your sign-in method before relying on complete account isolation.
 
 ## Checks
 
