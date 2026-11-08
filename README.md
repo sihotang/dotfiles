@@ -128,6 +128,84 @@ Git settings live under `home/dot_config/git/` and are included by the managed
 `~/.gitconfig`. Machine-specific Git settings belong in `~/.gitconfig.local`;
 keep that file local and out of this repository.
 
+## Codex accounts
+
+The main Codex account always uses `~/.codex` (the default `CODEX_HOME`).
+Additional accounts each get an isolated profile directory with its own
+`auth.json`, `config.toml`, and an `AGENTS.md` symlink that points to the
+shared `~/.codex/AGENTS.md`.
+
+### Setting up accounts
+
+Add your account names to the local `~/.config/chezmoi/chezmoi.toml` on each
+machine (keep this file out of the repository):
+
+```toml
+[data]
+codexProfilesDir = "codex-profiles"
+codexAccounts = ["personal", "work", "client"]
+```
+
+Run `chezmoi apply` to create the profile directories under
+`~/codex-profiles/<name>/`. Each directory is populated with a stub
+`config.toml` (edit it to set a model, approval policy, or other overrides)
+and an `AGENTS.md` symlink to `~/.codex/AGENTS.md`. Run `codex login` from
+each profile to authenticate independently:
+
+```sh
+CODEX_HOME=~/codex-profiles/work codex login
+```
+
+#### XDG base directory
+
+To store profiles under the XDG data directory (`~/.local/share/codex/`),
+set `codexProfilesDir` to the XDG-relative path instead:
+
+```toml
+[data]
+codexProfilesDir = ".local/share/codex"
+codexAccounts = ["personal", "work"]
+```
+
+### Switching accounts
+
+When `codexAccounts` is set, the shell provides these helpers:
+
+| Command | Description |
+| --- | --- |
+| `codex` | Runs with the default `~/.codex` (main account) |
+| `codex-<name>` | Runs with `~/codex-profiles/<name>/` as `CODEX_HOME` |
+| `codex-use <name> [args…]` | Explicit account switch with error checking |
+| `codex-pick [args…]` | Interactive fzf picker over configured accounts |
+
+For example:
+
+```sh
+codex-work                             # open Codex under the work profile
+codex-use personal "refactor auth"     # run a prompt under a named account
+codex-pick                             # choose interactively with fzf
+```
+
+### Customizing a profile
+
+Edit `~/codex-profiles/<name>/config.toml` directly. Settings here overlay
+`~/.codex/config.toml`. Common overrides:
+
+```toml
+# ~/codex-profiles/work/config.toml
+model = "o4-mini"
+approval_policy = "on-request"
+```
+
+To use custom instructions for a specific account, replace its `AGENTS.md`
+symlink with a real file:
+
+```sh
+unlink ~/codex-profiles/work/AGENTS.md
+cp ~/.codex/AGENTS.md ~/codex-profiles/work/AGENTS.md
+# now edit ~/codex-profiles/work/AGENTS.md
+```
+
 ## Checks
 
 Run the repository check after changing shell files, templates, or managed JSON

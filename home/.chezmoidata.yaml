@@ -3,3 +3,13 @@
 ollamaHost: 127.0.0.1:11434
 workspaceDir: Workspace
 editor: "code --wait"
+# Codex account profiles. Set per machine in ~/.config/chezmoi/chezmoi.toml.
+# The main account always uses ~/.codex (the default CODEX_HOME).
+# Additional accounts live under ~/{{ codexProfilesDir }}/<name>/.
+# To use the XDG base directory instead, set codexProfilesDir: ".local/share/codex".
+# Example local override:
+#   [data]
+#   codexProfilesDir = "codex-profiles"
+#   codexAccounts = ["personal", "work", "client"]
+codexAccounts: []
+codexProfilesDir: "codex-profiles"
