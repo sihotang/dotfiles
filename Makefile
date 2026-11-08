@@ -10,6 +10,7 @@ check:
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" cat ~/.config/zsh/aliases.zsh > "$$tmpdir/aliases"; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" cat ~/.config/zsh/exports.zsh > "$$tmpdir/exports"; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" cat ~/.gemini/settings.json > "$$tmpdir/gemini-settings.json"; \
+	python3 -m json.tool "home/private_Library/private_Application Support/private_Code/User/settings.json" > "$$tmpdir/vscode-settings.json"; \
 	for file in home/dot_zprofile home/dot_zshrc home/dot_config/zsh/functions.zsh "$$tmpdir/aliases" "$$tmpdir/exports"; do \
 	  zsh -n "$$file"; \
 	done; \

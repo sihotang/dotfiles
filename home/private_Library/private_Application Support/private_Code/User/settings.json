@@ -1,0 +1,41 @@
+{
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  },
+  "chat.instructionsFilesLocations": {
+    ".github/instructions": true,
+    ".claude/rules": true,
+    "~/.copilot/instructions": true,
+    "~/.claude/rules": true
+  },
+  "chat.viewSessions.orientation": "stacked",
+  "cSpell.language": "en,id",
+  "cSpell.userWords": [
+    "atuin",
+    "bunzip",
+    "chezmoi",
+    "chezmoiroot",
+    "croot",
+    "lmstudio",
+    "mkcd",
+    "ollama",
+    "orbstack",
+    "shellenv",
+    "sihotang",
+    "soparsio",
+    "toplevel",
+    "unxz"
+  ],
+  "gitlens.graph.details.location": "auto",
+  "makefile.configureOnOpen": true,
+  "mssql.connectionGroups": [
+    {
+      "id": "ROOT",
+      "name": "ROOT"
+    }
+  ],
+  "window.density.layout": "compact",
+  "workbench.colorTheme": "GitHub Dark Default",
+  "workbench.iconTheme": "vscode-icons",
+  "workbench.secondarySideBar.showLabels": false
+}

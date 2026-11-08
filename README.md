@@ -119,6 +119,10 @@ Ghostty is installed as a Homebrew cask on macOS, with its config at
 `~/.config/ghostty/config`.
 Neovim is installed as a Homebrew formula, and its configuration reuses the
 shared Vim settings at `~/.config/nvim/init.vim`.
+Visual Studio Code is installed as a Homebrew cask on macOS, with portable user
+settings managed at `~/Library/Application Support/Code/User/settings.json`.
+Machine-specific extension paths and temporary agent instruction paths are
+kept out of the shared settings.
 
 Git settings live under `home/dot_config/git/` and are included by the managed
 `~/.gitconfig`. Machine-specific Git settings belong in `~/.gitconfig.local`;
