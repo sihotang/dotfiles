@@ -115,6 +115,8 @@ the configured default, and mise updates itself automatically. Starship's
 prompt settings live in `~/.config/starship.toml`, and Atuin settings live in
 `~/.config/atuin/config.toml`. The Zsh integration sets `ATUIN_CONFIG_DIR` to
 that Atuin directory. The existing `~/.atuin/config.toml` is left untouched.
+Ghostty is installed as a Homebrew cask on macOS, with its config at
+`~/.config/ghostty/config`.
 
 Git settings live under `home/dot_config/git/` and are included by the managed
 `~/.gitconfig`. Machine-specific Git settings belong in `~/.gitconfig.local`;
