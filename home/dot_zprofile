@@ -7,6 +7,6 @@ elif [[ -x /usr/local/bin/brew ]]; then
   eval "$(/usr/local/bin/brew shellenv)"
 fi
 
-# Load environment settings for login shells after Homebrew updates PATH.
+# Load shared exports after Homebrew updates PATH.
 [[ -f "$HOME/.config/zsh/exports.zsh" ]] && source "$HOME/.config/zsh/exports.zsh"
 typeset -g _DOT_ENV_LOADED=1
