@@ -6,11 +6,6 @@ if [[ -z ${_DOT_ENV_LOADED:-} ]]; then
   typeset -g _DOT_ENV_LOADED=1
 fi
 
-# Interactive tool setup
-if (( $+commands[fnm] )); then
-  eval "$(fnm env --use-on-cd)"
-fi
-
 # Load Oh My Zsh when it is installed.
 omz_dir="${ZSH:-$HOME/.oh-my-zsh}"
 [[ -r "$omz_dir/oh-my-zsh.sh" ]] && source "$omz_dir/oh-my-zsh.sh"

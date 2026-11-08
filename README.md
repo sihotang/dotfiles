@@ -33,6 +33,13 @@ initialize the repository directly:
 chezmoi init soparsio/dotfiles
 ```
 
+On macOS, `chezmoi apply` installs the Homebrew packages listed in
+`.chezmoiscripts/darwin/run_onchange_before_install-packages.sh.tmpl` when
+Homebrew is available. The package script runs again when its package list
+changes. It installs `mise` with the optimized `mise.run` installer instead
+of Homebrew, removing an existing Homebrew `mise` formula during the one-time
+migration.
+
 Then preview and apply:
 
 ```sh
@@ -102,6 +109,9 @@ workspaceDir = "Workspace"
 `workspaceDir` sets the directory opened by the workspace alias, relative to
 your home directory. `editor` sets the default editor for Zsh and Git; it
 defaults to `code --wait`.
+
+Global mise settings live in `~/.config/mise/config.toml`; Node.js `24.21.0` is
+the configured default, and mise updates itself automatically.
 
 Git settings live under `home/dot_config/git/` and are included by the managed
 `~/.gitconfig`. Machine-specific Git settings belong in `~/.gitconfig.local`;
