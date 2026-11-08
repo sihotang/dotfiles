@@ -1,0 +1,71 @@
+#!/bin/sh
+{{- range $profile, $tools := .profiles -}}
+{{ if not (regexMatch "^[a-zA-Z0-9._-]+$" $profile) }}{{ fail (printf "invalid profile name %q" $profile) }}{{ end }}
+{{ range $tool := $tools -}}
+{{ if not (or (eq $tool "codex") (eq $tool "claude") (eq $tool "copilot") (eq $tool "gemini") (eq $tool "vscode") (eq $tool "antigravity")) }}{{ fail (printf "unsupported assistant %q in profile %q" $tool $profile) }}{{ end }}
+{{ end -}}
+{{ end -}}
+# Initializes state directories for configured assistant CLI profiles.
+set -eu
+umask 077
+
+profiles_base="{{ .chezmoi.homeDir }}/{{ .profilesDir }}"
+
+remove_unconfigured_profiles() {
+  [ -d "$profiles_base" ] || return 0
+  for profile_dir in "$profiles_base"/* "$profiles_base"/.[!.]* "$profiles_base"/..?*; do
+    [ -d "$profile_dir" ] || continue
+    profile_name=${profile_dir##*/}
+    case "$profile_name" in
+{{ range $profile, $tools := .profiles -}}
+{{ if $tools }}      '{{ $profile }}') ;;
+{{ end -}}
+{{ end -}}
+      *) rm -rf -- "$profile_dir" ;;
+    esac
+  done
+}
+
+remove_unconfigured_profiles
+
+create_profile() {
+  tool="$1"
+  name="$2"
+  profile_dir="$profiles_base/$name/$tool"
+  mkdir -p "$profile_dir"
+}
+
+link_if_missing() {
+  source_file="$1"
+  target_file="$2"
+  if [ -f "$source_file" ] && [ ! -e "$target_file" ]; then
+    mkdir -p "$(dirname "$target_file")"
+    ln -s "$source_file" "$target_file"
+  fi
+}
+
+{{ range $profile, $tools := .profiles -}}
+{{ range $tool := $tools -}}
+{{ if eq $tool "codex" -}}
+create_profile codex '{{ $profile }}'
+profile_dir="$profiles_base/{{ $profile }}/codex"
+link_if_missing "{{ $.chezmoi.homeDir }}/.codex/AGENTS.md" "$profile_dir/AGENTS.md"
+if [ ! -f "$profile_dir/config.toml" ]; then
+  printf '# Codex profile: %s\n# Add account-specific settings here.\n' '{{ $profile }}' > "$profile_dir/config.toml"
+fi
+{{ else if eq $tool "claude" -}}
+create_profile claude '{{ $profile }}'
+profile_dir="$profiles_base/{{ $profile }}/claude"
+link_if_missing "{{ $.chezmoi.homeDir }}/.claude/CLAUDE.md" "$profile_dir/CLAUDE.md"
+{{ else if eq $tool "copilot" -}}
+create_profile copilot '{{ $profile }}'
+profile_dir="$profiles_base/{{ $profile }}/copilot"
+link_if_missing "{{ $.chezmoi.homeDir }}/.copilot/copilot-instructions.md" "$profile_dir/copilot-instructions.md"
+{{ else if eq $tool "gemini" -}}
+create_profile gemini '{{ $profile }}'
+profile_dir="$profiles_base/{{ $profile }}/gemini/.gemini"
+link_if_missing "{{ $.chezmoi.homeDir }}/.gemini/GEMINI.md" "$profile_dir/GEMINI.md"
+link_if_missing "{{ $.chezmoi.homeDir }}/.gemini/settings.json" "$profile_dir/settings.json"
+{{ end -}}
+{{ end -}}
+{{ end -}}

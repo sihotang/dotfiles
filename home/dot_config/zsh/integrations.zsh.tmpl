@@ -1,0 +1,85 @@
+#!/usr/bin/env zsh
+
+[[ -f "$HOME/.local/bin/env" ]] && source "$HOME/.local/bin/env"
+[[ -r "$HOME/.orbstack/shell/init.zsh" ]] && source "$HOME/.orbstack/shell/init.zsh" 2>/dev/null || :
+
+# Tool integrations (guarded so shell startup remains usable)
+command -v mise >/dev/null 2>&1 && eval "$(mise activate zsh)"
+command -v atuin >/dev/null 2>&1 && eval "$(atuin init zsh)"
+command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
+
+{{- if .profiles }}
+{{- range $profile, $tools := .profiles -}}
+{{ if not (regexMatch "^[a-zA-Z0-9._-]+$" $profile) }}{{ fail (printf "invalid profile name %q" $profile) }}{{ end }}
+{{ range $tool := $tools -}}
+{{ if not (or (eq $tool "codex") (eq $tool "claude") (eq $tool "copilot") (eq $tool "gemini") (eq $tool "vscode") (eq $tool "antigravity")) }}{{ fail (printf "unsupported assistant %q in profile %q" $tool $profile) }}{{ end }}
+{{ end -}}
+{{ end -}}
+
+ai-profile-enabled() {
+  case "$1:$2" in
+{{ range $profile, $tools := .profiles -}}
+{{ range $tool := $tools -}}
+    "{{ $tool }}:{{ $profile }}") return 0 ;;
+{{ end -}}
+{{ end -}}
+    *) return 1 ;;
+  esac
+}
+
+# ai-use TOOL PROFILE [arguments...] starts a CLI with an isolated state directory.
+ai-use() {
+  if (( $# < 2 )); then
+    print -u2 'Usage: ai-use TOOL PROFILE [arguments...]'
+    return 2
+  fi
+  local tool="$1" profile="$2" profile_dir env_name cli
+  local -a profile_env
+  case "$tool" in
+    codex) env_name=CODEX_HOME; cli=codex ;;
+    claude) env_name=CLAUDE_CONFIG_DIR; cli=claude ;;
+    copilot) env_name=COPILOT_HOME; cli=copilot ;;
+    gemini) env_name=GEMINI_CLI_HOME; cli=gemini ;;
+    vscode) cli=code ;;
+    *) print -u2 'ai-use: TOOL must be codex, claude, copilot, gemini, or vscode'; return 2 ;;
+  esac
+  if [[ ! "$profile" =~ '^[a-zA-Z0-9._-]+$' || "$profile" == '.' || "$profile" == '..' ]]; then
+    print -u2 'ai-use: profile name may contain only letters, numbers, dot, underscore, and hyphen'
+    return 2
+  fi
+  if ! ai-profile-enabled "$tool" "$profile"; then
+    print -u2 "ai-use: profile is not configured for $tool: $profile"
+    return 1
+  fi
+  shift 2
+  if [[ "$tool" == vscode ]]; then
+    profile_env=()
+    case "$profile" in
+{{ range $profile, $tools := .profiles -}}
+{{ if has "vscode" $tools -}}
+      "{{ $profile }}")
+{{ range $tool := $tools -}}
+{{ if eq $tool "codex" }}        profile_env+=("CODEX_HOME=$HOME/{{ $.profilesDir }}/{{ $profile }}/codex")
+{{ else if eq $tool "claude" }}        profile_env+=("CLAUDE_CONFIG_DIR=$HOME/{{ $.profilesDir }}/{{ $profile }}/claude")
+{{ else if eq $tool "copilot" }}        profile_env+=("COPILOT_HOME=$HOME/{{ $.profilesDir }}/{{ $profile }}/copilot")
+{{ else if eq $tool "gemini" }}        profile_env+=("GEMINI_CLI_HOME=$HOME/{{ $.profilesDir }}/{{ $profile }}/gemini")
+{{ end -}}
+{{ end -}}
+        ;;
+{{ end -}}
+{{ end -}}
+      *) ;;
+    esac
+    # VS Code inherits the first running instance's environment; quit it before switching profiles.
+    command env "${profile_env[@]}" code --profile "$profile" "$@"
+    return $?
+  fi
+  profile_dir="$HOME/{{ .profilesDir }}/$profile/$tool"
+  if [[ ! -d "$profile_dir" ]]; then
+    print -u2 "ai-use: profile not found: $tool/$profile"
+    return 1
+  fi
+  command env "$env_name=$profile_dir" "$cli" "$@"
+}
+
+{{- end }}

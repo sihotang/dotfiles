@@ -3,5 +3,12 @@
 [settings.self_update]
 auto = true
 
+[settings]
+npm.package_manager = "npm"
+
 [tools]
 node = "24.21.0"
+"npm:@openai/codex" = "latest"
+"npm:@anthropic-ai/claude-code" = { version = "latest", allow_builds = ["@anthropic-ai/claude-code"] }
+"npm:@google/gemini-cli" = "latest"
+"npm:@github/copilot" = { version = "latest", allow_builds = ["@github/copilot"] }
