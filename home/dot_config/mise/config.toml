@@ -1,0 +1,7 @@
+# Shared global mise configuration.
+# Add default tool versions under [tools] and shared variables under [env].
+[settings.self_update]
+auto = true
+
+[tools]
+node = "24.21.0"

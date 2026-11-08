@@ -1,0 +1,22 @@
+{{ if and (eq .chezmoi.os "darwin") (lookPath "brew") -}}
+#!/bin/sh
+
+set -eu
+
+if brew list --formula --versions mise >/dev/null 2>&1; then
+  brew uninstall mise
+fi
+
+if ! command -v mise >/dev/null 2>&1; then
+  curl -fsSL https://mise.run | sh
+fi
+
+brew bundle --file=/dev/stdin <<EOF
+brew "atuin"
+brew "chezmoi"
+brew "gh"
+brew "git"
+brew "starship"
+brew "zsh"
+EOF
+{{ end -}}
