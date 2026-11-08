@@ -117,6 +117,8 @@ prompt settings live in `~/.config/starship.toml`, and Atuin settings live in
 that Atuin directory. The existing `~/.atuin/config.toml` is left untouched.
 Ghostty is installed as a Homebrew cask on macOS, with its config at
 `~/.config/ghostty/config`.
+Neovim is installed as a Homebrew formula, and its configuration reuses the
+shared Vim settings at `~/.config/nvim/init.vim`.
 
 Git settings live under `home/dot_config/git/` and are included by the managed
 `~/.gitconfig`. Machine-specific Git settings belong in `~/.gitconfig.local`;
