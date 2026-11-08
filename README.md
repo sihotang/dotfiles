@@ -111,12 +111,13 @@ your home directory. `editor` sets the default editor for Zsh and Git; it
 defaults to `code --wait`.
 
 Global mise settings live in `~/.config/mise/config.toml`; Node.js `24.21.0` is
-the configured default, and mise updates itself automatically. Codex CLI,
-Claude Code, Gemini CLI, and GitHub Copilot CLI are installed globally through
-npm, managed as mise npm tools. After applying the config, chezmoi runs
-`mise install` to install configured tools. It runs again when the mise config
-changes. Starship's prompt settings live in
-`~/.config/starship.toml`, and Atuin settings live in
+the configured default, with Bun, the latest stable Go, and Python `3.15.2`
+also managed by mise. Mise updates itself automatically. Codex CLI, Claude
+Code, Gemini CLI, and GitHub Copilot CLI are installed globally through npm,
+managed as mise npm tools with Bun as the package manager. After applying the
+config, chezmoi installs Bun first, then runs `mise install` for configured
+tools. It runs again when the mise config changes. Starship's prompt settings
+live in `~/.config/starship.toml`, and Atuin settings live in
 `~/.config/atuin/config.toml`. The Zsh integration sets `ATUIN_CONFIG_DIR` to
 that Atuin directory. The existing `~/.atuin/config.toml` is left untouched.
 Ghostty is installed as a Homebrew cask on macOS, with its config at
