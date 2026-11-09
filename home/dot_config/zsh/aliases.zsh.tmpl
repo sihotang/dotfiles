@@ -39,10 +39,13 @@ alias c="claude"
 {{- range $profile, $tools := .profiles -}}
 {{ range $tool := $tools -}}
 {{ if eq $tool "vscode" -}}
-alias code-{{ $profile }}='ai-use vscode {{ $profile }}'
+alias code-{{ $profile }}='profile-use vscode {{ $profile }}'
 {{ else if eq $tool "antigravity" -}}
+{{ else if eq $tool "gh" -}}
+alias gh-{{ $profile }}='profile-use gh {{ $profile }}'
+alias git-{{ $profile }}='profile-use git {{ $profile }}'
 {{ else -}}
-alias {{ $tool }}-{{ $profile }}='ai-use {{ $tool }} {{ $profile }}'
+alias {{ $tool }}-{{ $profile }}='profile-use {{ $tool }} {{ $profile }}'
 {{ end -}}
 {{ end -}}
 {{ end -}}

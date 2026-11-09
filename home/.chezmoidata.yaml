@@ -3,7 +3,8 @@
 ollamaHost: 127.0.0.1:11434
 workspaceDir: Workspace
 editor: "code --wait"
-# Profiles map each profile name to the assistant CLIs enabled for it.
+# Profiles map each profile name to the CLI tools and app integrations enabled
+# for it.
 # Configure per machine in ~/.config/chezmoi/chezmoi.toml.
 profilesDir: ".config/profiles"
 profiles: {}
