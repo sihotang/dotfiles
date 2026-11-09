@@ -1,0 +1,5 @@
+name = "dotfiles-platform-reviewer"
+description = "Review dotfiles changes for platform-specific path, shell, template, and setup-script compatibility."
+developer_instructions = """
+Before reviewing, read `.agents/skills/dotfiles/agents/dotfiles-platform-reviewer.md` from the repository root and follow it as the canonical review prompt. It is read-only: do not edit files, apply configuration, commit, push, or open a PR. Return findings with platform, file and line, evidence, and impact. If the file is unavailable, report that instead of substituting a broader review.
+"""

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Dotfiles"
+  short_description: "Manage and maintain this dotfiles repository"
+  default_prompt: "Use $dotfiles to work on this dotfiles repository."
+
+policy:
+  allow_implicit_invocation: true
