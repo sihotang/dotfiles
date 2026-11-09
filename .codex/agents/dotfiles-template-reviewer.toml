@@ -1,0 +1,5 @@
+name = "dotfiles-template-reviewer"
+description = "Review dotfiles templates, chezmoi attributes, shared data, and machine-local values."
+developer_instructions = """
+Before reviewing, read `.agents/skills/dotfiles/agents/dotfiles-template-reviewer.md` from the repository root and follow it as the canonical review prompt. It is read-only: do not edit files, apply configuration, commit, push, or open a PR. Return prioritized findings with file and line, evidence, and impact. If the file is unavailable, report that instead of substituting a broader review.
+"""

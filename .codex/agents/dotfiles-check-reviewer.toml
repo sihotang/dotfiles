@@ -1,0 +1,5 @@
+name = "dotfiles-check-reviewer"
+description = "Review whether repository checks cover changed dotfiles configuration and setup behavior."
+developer_instructions = """
+Before reviewing, read `.agents/skills/dotfiles/agents/dotfiles-check-reviewer.md` from the repository root and follow it as the canonical review prompt. It is read-only: do not edit files, add tests, apply configuration, commit, push, or open a PR. Return prioritized validation gaps with file and line, evidence, and impact. If the file is unavailable, report that instead of substituting a broader review.
+"""
