@@ -2,10 +2,10 @@
 {{- range $profile, $tools := .profiles -}}
 {{ if not (regexMatch "^[a-zA-Z0-9._-]+$" $profile) }}{{ fail (printf "invalid profile name %q" $profile) }}{{ end }}
 {{ range $tool := $tools -}}
-{{ if not (or (eq $tool "codex") (eq $tool "claude") (eq $tool "copilot") (eq $tool "gemini") (eq $tool "vscode") (eq $tool "antigravity")) }}{{ fail (printf "unsupported assistant %q in profile %q" $tool $profile) }}{{ end }}
+{{ if not (or (eq $tool "codex") (eq $tool "claude") (eq $tool "copilot") (eq $tool "gemini") (eq $tool "gh") (eq $tool "vscode") (eq $tool "antigravity")) }}{{ fail (printf "unsupported profile tool %q in profile %q" $tool $profile) }}{{ end }}
 {{ end -}}
 {{ end -}}
-# Initializes state directories for configured assistant CLI profiles.
+# Initializes state directories for configured CLI and app profiles.
 set -eu
 umask 077
 
@@ -66,6 +66,8 @@ create_profile gemini '{{ $profile }}'
 profile_dir="$profiles_base/{{ $profile }}/gemini/.gemini"
 link_if_missing "{{ $.chezmoi.homeDir }}/.gemini/GEMINI.md" "$profile_dir/GEMINI.md"
 link_if_missing "{{ $.chezmoi.homeDir }}/.gemini/settings.json" "$profile_dir/settings.json"
+{{ else if eq $tool "gh" -}}
+create_profile gh '{{ $profile }}'
 {{ end -}}
 {{ end -}}
 {{ end -}}

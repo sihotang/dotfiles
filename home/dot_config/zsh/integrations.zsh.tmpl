@@ -12,7 +12,7 @@ command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
 {{- range $profile, $tools := .profiles -}}
 {{ if not (regexMatch "^[a-zA-Z0-9._-]+$" $profile) }}{{ fail (printf "invalid profile name %q" $profile) }}{{ end }}
 {{ range $tool := $tools -}}
-{{ if not (or (eq $tool "codex") (eq $tool "claude") (eq $tool "copilot") (eq $tool "gemini") (eq $tool "vscode") (eq $tool "antigravity")) }}{{ fail (printf "unsupported assistant %q in profile %q" $tool $profile) }}{{ end }}
+{{ if not (or (eq $tool "codex") (eq $tool "claude") (eq $tool "copilot") (eq $tool "gemini") (eq $tool "gh") (eq $tool "vscode") (eq $tool "antigravity")) }}{{ fail (printf "unsupported profile tool %q in profile %q" $tool $profile) }}{{ end }}
 {{ end -}}
 {{ end -}}
 
@@ -27,28 +27,32 @@ ai-profile-enabled() {
   esac
 }
 
-# ai-use TOOL PROFILE [arguments...] starts a CLI with an isolated state directory.
-ai-use() {
+# profile-use TOOL PROFILE [arguments...] starts a CLI with an isolated state directory.
+profile-use() {
   if (( $# < 2 )); then
-    print -u2 'Usage: ai-use TOOL PROFILE [arguments...]'
+    print -u2 'Usage: profile-use TOOL PROFILE [arguments...]'
     return 2
   fi
-  local tool="$1" profile="$2" profile_dir env_name cli
+  local tool="$1" profile="$2" profile_dir env_name cli gh_profile_enabled=0 git_helper_prefix
   local -a profile_env
   case "$tool" in
     codex) env_name=CODEX_HOME; cli=codex ;;
     claude) env_name=CLAUDE_CONFIG_DIR; cli=claude ;;
     copilot) env_name=COPILOT_HOME; cli=copilot ;;
     gemini) env_name=GEMINI_CLI_HOME; cli=gemini ;;
+    gh) env_name=GH_CONFIG_DIR; cli=gh ;;
+    git) env_name=GH_CONFIG_DIR; cli=git ;;
     vscode) cli=code ;;
-    *) print -u2 'ai-use: TOOL must be codex, claude, copilot, gemini, or vscode'; return 2 ;;
+    *) print -u2 'profile-use: TOOL must be codex, claude, copilot, gemini, gh, git, or vscode'; return 2 ;;
   esac
   if [[ ! "$profile" =~ '^[a-zA-Z0-9._-]+$' || "$profile" == '.' || "$profile" == '..' ]]; then
-    print -u2 'ai-use: profile name may contain only letters, numbers, dot, underscore, and hyphen'
+    print -u2 'profile-use: profile name may contain only letters, numbers, dot, underscore, and hyphen'
     return 2
   fi
-  if ! ai-profile-enabled "$tool" "$profile"; then
-    print -u2 "ai-use: profile is not configured for $tool: $profile"
+  local profile_tool="$tool"
+  [[ "$tool" == git ]] && profile_tool=gh
+  if ! ai-profile-enabled "$profile_tool" "$profile"; then
+    print -u2 "profile-use: profile is not configured for $tool: $profile"
     return 1
   fi
   shift 2
@@ -63,6 +67,10 @@ ai-use() {
 {{ else if eq $tool "claude" }}        profile_env+=("CLAUDE_CONFIG_DIR=$HOME/{{ $.profilesDir }}/{{ $profile }}/claude")
 {{ else if eq $tool "copilot" }}        profile_env+=("COPILOT_HOME=$HOME/{{ $.profilesDir }}/{{ $profile }}/copilot")
 {{ else if eq $tool "gemini" }}        profile_env+=("GEMINI_CLI_HOME=$HOME/{{ $.profilesDir }}/{{ $profile }}/gemini")
+{{ else if eq $tool "gh" }}        gh_profile_enabled=1
+        profile_env+=("GH_CONFIG_DIR=$HOME/{{ $.profilesDir }}/{{ $profile }}/gh")
+        git_helper_prefix=$(printf '\041')
+        profile_env+=("GIT_CONFIG_COUNT=2" "GIT_CONFIG_KEY_0=credential.helper" "GIT_CONFIG_VALUE_0=" "GIT_CONFIG_KEY_1=credential.helper" "GIT_CONFIG_VALUE_1=${git_helper_prefix}gh auth git-credential")
 {{ end -}}
 {{ end -}}
         ;;
@@ -71,15 +79,49 @@ ai-use() {
       *) ;;
     esac
     # VS Code inherits the first running instance's environment; quit it before switching profiles.
+    if (( gh_profile_enabled )); then
+      (
+        unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN
+        command env "${profile_env[@]}" code --profile "$profile" "$@"
+      )
+      return $?
+    fi
     command env "${profile_env[@]}" code --profile "$profile" "$@"
     return $?
   fi
-  profile_dir="$HOME/{{ .profilesDir }}/$profile/$tool"
+  profile_dir="$HOME/{{ .profilesDir }}/$profile/$profile_tool"
   if [[ ! -d "$profile_dir" ]]; then
-    print -u2 "ai-use: profile not found: $tool/$profile"
+    print -u2 "profile-use: profile not found: $tool/$profile"
     return 1
   fi
+  if [[ "$tool" == gh ]]; then
+    (
+      unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN
+      export GH_CONFIG_DIR="$profile_dir"
+      command gh "$@"
+    )
+    return $?
+  fi
+  if [[ "$tool" == git ]]; then
+    git_helper_prefix=$(printf '\041')
+    (
+      unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN
+      export GH_CONFIG_DIR="$profile_dir"
+      export GIT_CONFIG_COUNT=2
+      export GIT_CONFIG_KEY_0=credential.helper
+      export GIT_CONFIG_VALUE_0=
+      export GIT_CONFIG_KEY_1=credential.helper
+      export GIT_CONFIG_VALUE_1="${git_helper_prefix}gh auth git-credential"
+      command git "$@"
+    )
+    return $?
+  fi
   command env "$env_name=$profile_dir" "$cli" "$@"
+}
+
+# Keep the previous assistant-focused command available for existing shell usage.
+ai-use() {
+  profile-use "$@"
 }
 
 {{- end }}

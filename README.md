@@ -133,18 +133,18 @@ Git settings live under `home/dot_config/git/` and are included by the managed
 `~/.gitconfig`. Machine-specific Git settings belong in `~/.gitconfig.local`;
 keep that file local and out of this repository.
 
-## Profiles for multiple assistant CLIs
+## Profiles for CLI tools and app integrations
 
-Configure a map of profile names to the assistant CLIs and VS Code extensions
-enabled for each profile in the machine-local `~/.config/chezmoi/chezmoi.toml`:
+Configure a map of profile names to the CLI tools and app integrations enabled
+for each profile in the machine-local `~/.config/chezmoi/chezmoi.toml`:
 
 ```toml
 [data]
 profilesDir = ".config/profiles"
 
 [data.profiles]
-work = ["codex", "vscode"]
-personal = ["codex", "claude", "copilot", "gemini", "antigravity", "vscode"]
+work = ["codex", "gh", "vscode"]
+personal = ["codex", "claude", "copilot", "gemini", "gh", "antigravity", "vscode"]
 ```
 
 This creates directories such as `~/.config/profiles/work/codex/` and
@@ -158,18 +158,41 @@ Sign in to each CLI under the profile you want to use:
 ```sh
 codex-work
 codex-personal
+gh-work auth login
+gh-personal auth login
+git-work push
+git-personal push
 claude-personal
 copilot-personal
 gemini-personal
 code-work .
 code-personal .
-ai-use codex personal --help
+profile-use gh personal auth status
+profile-use codex personal --help
 ```
 
-`ai-use TOOL PROFILE [arguments…]` is the general launcher. The generated
+`profile-use TOOL PROFILE [arguments…]` is the general launcher. `ai-use` stays
+available as a compatibility wrapper. The generated
 `<tool>-<profile>` shortcuts are equivalent. Plain CLI commands continue to
 use their normal configuration directories. Gemini stores its files in a
 `.gemini/` directory inside the profile's Gemini directory.
+
+Each `gh-<profile>` launcher sets `GH_CONFIG_DIR` to
+`~/.config/profiles/<profile>/gh`; run `gh-<profile> auth login` separately for
+each account. The launcher removes `GH_TOKEN`, `GITHUB_TOKEN`,
+`GH_ENTERPRISE_TOKEN`, and `GITHUB_ENTERPRISE_TOKEN` from its child process so
+environment tokens do not override the profile's saved account. GitHub CLI
+may store credentials in the operating system credential manager; the profile
+directory holds the corresponding CLI configuration. See the [gh environment
+variable reference](https://cli.github.com/manual/gh_help_environment).
+
+For Git over HTTPS, `git-<profile>` runs Git with that profile's GitHub CLI
+credential helper without changing global Git config. A VS Code profile with
+`gh` enabled also configures the helper for plain `git` commands in its
+integrated terminal. SSH remotes continue to use the SSH key selected by SSH,
+so use an HTTPS remote when you want the GitHub CLI profile to choose the
+account. Git 2.31 or newer is required for Git's environment-based config
+overrides.
 
 `code-<profile>` launches VS Code with the matching native VS Code profile and
 environment paths for the CLI tools listed in that profile. VS Code keeps its
