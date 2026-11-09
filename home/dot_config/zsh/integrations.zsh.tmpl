@@ -8,9 +8,10 @@ command -v mise >/dev/null 2>&1 && eval "$(mise activate zsh)"
 command -v atuin >/dev/null 2>&1 && eval "$(atuin init zsh)"
 command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
 
-{{- if .profiles }}
+{{- $profiles := (index . "profiles") | default dict }}
+{{- if $profiles }}
 {{- $profilesDir := (index . "profilesDir") | default ".config/profiles" }}
-{{- range $profile, $config := .profiles -}}
+{{- range $profile, $config := $profiles -}}
 {{ if not (regexMatch "^[a-zA-Z0-9._-]+$" $profile) }}{{ fail (printf "invalid profile name %q" $profile) }}{{ end }}
 {{ $tools := $config }}
 {{ if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
@@ -21,7 +22,7 @@ command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
 
 ai-profile-enabled() {
   case "$1:$2" in
-{{ range $profile, $config := .profiles -}}
+{{ range $profile, $config := $profiles -}}
 {{ $tools := $config }}
 {{ if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
 {{ range $tool := $tools -}}
@@ -67,13 +68,13 @@ profile-use() {
     profile_env=()
     local vscode_profile="$profile"
     case "$profile" in
-{{ range $profile, $config := .profiles }}
+{{ range $profile, $config := $profiles }}
 {{ if not (kindIs "slice" $config) }}{{ with index $config "displayName" }}      "{{ $profile }}") vscode_profile={{ . | quote }} ;;
 {{ end }}{{ end }}
 {{ end }}
     esac
     case "$profile" in
-{{ range $profile, $config := .profiles -}}
+{{ range $profile, $config := $profiles -}}
 {{ $tools := $config }}
 {{ if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
 {{ if has "vscode" $tools -}}
