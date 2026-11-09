@@ -5,6 +5,7 @@ node = "24.21.0"
 bun = "latest"
 go = "latest"
 python = "3.15.2"
+ripgrep = "latest"
 
 # AI CLIs use mise's npm backend with Bun as the installer.
 "npm:@openai/codex" = "latest"
