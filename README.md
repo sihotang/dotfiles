@@ -221,19 +221,20 @@ overrides.
 environment paths for the CLI tools listed in that profile. VS Code keeps its
 usual shared user data, so its primary sign-in is available across profiles;
 profile-specific settings and extension selections remain managed by VS Code.
-Create each native VS Code profile in the Profiles editor using **Copy from:
-Default**. In the profile contents, include **Extensions** and leave **Settings**
-out so the profile uses the Default profile's settings while keeping its own
-extension selection. VS Code applies configuration categories omitted from a
-partial profile from Default. This shares the whole Settings category; copying
-Settings into a profile creates a snapshot, not a live link. For individual
-settings that should stay in sync across profiles, use **Apply Setting to all
-Profiles**. See the [VS Code Profiles guide](https://code.visualstudio.com/docs/configure/profiles).
-
-Create the native profile before using `code-<profile>`: the `--profile` CLI
-option creates an empty profile when the name does not exist. Chezmoi does not
-install or synchronize VS Code extensions. The integrated terminal and
-CLI-backed extensions inherit environment paths for the selected CLI profile.
+When the profile setup script runs during `chezmoi apply`, it invokes VS Code
+for every configured profile with `vscode` enabled. The `--profile` CLI option
+creates a native profile if it does not exist, so newly created profiles start
+empty. Use the Profiles editor to configure profile contents: include
+**Extensions** and leave **Settings** out if the profile should use Default's
+settings while keeping its own extension selection. VS Code applies
+configuration categories omitted from a partial profile from Default. This
+shares the whole Settings category; copying Settings into a profile creates a
+snapshot, not a live link. For individual settings that should stay in sync
+across profiles, use **Apply Setting to all Profiles**. See the
+[VS Code Profiles guide](https://code.visualstudio.com/docs/configure/profiles).
+Chezmoi does not install or synchronize VS Code extensions. The integrated
+terminal and CLI-backed extensions inherit environment paths for the selected
+CLI profile.
 
 Arguments passed to `code-<profile>` go directly to VS Code; the launcher does
 not create profile-specific workspace files. Fully quit every VS Code window

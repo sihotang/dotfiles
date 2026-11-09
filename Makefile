@@ -20,12 +20,15 @@ check:
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '$(PROFILE_TEST_DATA)' cat ~/.config/zsh/integrations.zsh > "$$tmpdir/integrations"; \
 	grep -F 'vscode_profile="Review Profile"' "$$tmpdir/integrations" > /dev/null; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '$(PROFILE_TEST_DATA)' execute-template --file home/.chezmoiscripts/run_onchange_setup-profiles.sh.tmpl > "$$tmpdir/setup-profiles.sh"; \
+	grep -F 'code --profile "Review Profile" --new-window' "$$tmpdir/setup-profiles.sh" > /dev/null; \
+	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '{"profiles":{}}' execute-template --file home/.chezmoiscripts/run_onchange_setup-profiles.sh.tmpl > "$$tmpdir/setup-profiles-empty.sh"; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" cat ~/.gemini/settings.json > "$$tmpdir/gemini-settings.json"; \
 	python3 -m json.tool "home/private_Library/private_Application Support/private_Code/User/settings.json" > "$$tmpdir/vscode-settings.json"; \
 	for file in home/dot_zprofile home/dot_zshrc home/dot_config/zsh/functions.zsh "$$tmpdir/aliases" "$$tmpdir/exports" "$$tmpdir/integrations"; do \
 	  zsh -n "$$file"; \
 	done; \
-	sh -n "$$tmpdir/setup-profiles.sh"; \
+	sh -n "$$tmpdir/setup-profiles.sh" "$$tmpdir/setup-profiles-empty.sh"; \
+	grep -Fx '#!/bin/sh' "$$tmpdir/setup-profiles-empty.sh" > /dev/null; \
 	python3 -m json.tool "$$tmpdir/gemini-settings.json" > /dev/null; \
 	GIT_CONFIG_COUNT=2 GIT_CONFIG_KEY_0=credential.helper GIT_CONFIG_VALUE_0= GIT_CONFIG_KEY_1=credential.helper GIT_CONFIG_VALUE_1='!gh auth git-credential' git config --get-all credential.helper | grep -Fx '!gh auth git-credential' > /dev/null; \
 	git diff --check; \
