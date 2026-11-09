@@ -141,6 +141,7 @@ for each profile in the machine-local `~/.config/chezmoi/chezmoi.toml`:
 ```toml
 [data]
 profilesDir = ".config/profiles"
+defaultProfile = "work"
 
 [data.profiles.work]
 tools = ["codex", "gh", "vscode"]
@@ -155,8 +156,10 @@ Each profile is an object with a `tools` array and optional `displayName`.
 Profile IDs remain the stable names used by launchers and CLI directories.
 `displayName` is passed to integrations that support a separate display name;
 for VS Code it selects the matching native profile. If omitted, the profile ID
-is used. Convert existing array entries under `[data.profiles]` to nested
-profile tables. For example:
+is used. Set `defaultProfile` to a configured profile that enables `vscode` to
+make plain `code` open that profile every time. Set it to `"Default"` to use
+VS Code's built-in Default Profile. Convert existing array entries under
+`[data.profiles]` to nested profile tables. For example:
 
 ```toml
 [data.profiles.sio]
