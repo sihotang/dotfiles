@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '%s\\n' '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"This repository provides the dotfiles workflow at .agents/skills/dotfiles/SKILL.md. Consult its matching reference for the requested task. Apply, commit, push, and pull request actions require explicit user authorization.\"}}'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
