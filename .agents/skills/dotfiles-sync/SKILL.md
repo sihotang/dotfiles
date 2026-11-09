@@ -1,9 +1,9 @@
 ---
-name: chezmoi-sync
+name: dotfiles-sync
 description: Use when the user invokes this skill or asks to test, apply, commit, and push chezmoi changes in this repository without creating a pull request. After checks pass and reviewed changes are applied, commit and push them.
 ---
 
-# Sync Chezmoi Changes
+# Sync Dotfiles Changes
 
 Use this workflow when the user wants a requested chezmoi change validated, applied to their home directory, committed, and pushed. Invocation authorizes these steps but does not authorize opening or merging a pull request. Once checks pass and apply verification succeeds, continue through commit and push in the same run. If there are no managed home targets, treat apply as a no-op and continue after checks pass. Follow any more specific user instruction, including a request not to apply, commit, or push.
 

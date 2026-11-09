@@ -1,9 +1,9 @@
 ---
-name: chezmoi-doctor
+name: dotfiles-doctor
 description: Use when the user reports a chezmoi setup, init, template, diff, or apply problem and wants help diagnosing it. Inspect state and recommend a safe fix without changing files or applying changes unless asked.
 ---
 
-# Diagnose Chezmoi Problems
+# Diagnose Dotfiles Problems
 
 Find the cause of the reported chezmoi problem and give the user a specific, safe next step. Default to read-only diagnostics: do not edit files, initialize or update the source, run apply, alter chezmoi state, or commit, push, or open a PR unless the user separately requests it.
 

@@ -1,9 +1,9 @@
 ---
-name: chezmoi-add-config
+name: dotfiles-add-config
 description: Use when adding or reorganizing a dotfile, application setting, or setup behavior in this chezmoi repository. Follow its source layout, template and data conventions, platform support, checks, and documentation.
 ---
 
-# Add Configuration to This Chezmoi Repository
+# Add Configuration to This Dotfiles Repository
 
 Use this workflow to add or reorganize managed configuration consistently with this repository. Implement the requested source change only; do not apply it to the home directory, commit it, push it, or open a PR unless the user separately requests those actions or invokes a workflow skill that authorizes them.
 

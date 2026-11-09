@@ -1,9 +1,9 @@
 ---
-name: chezmoi-audit
+name: dotfiles-audit
 description: Use when the user asks to review this chezmoi repository for configuration consistency, platform support, template or data issues, security concerns, or validation gaps. Report findings with evidence and do not modify files unless asked.
 ---
 
-# Audit Chezmoi Configuration
+# Audit Dotfiles Configuration
 
 Review the requested scope of this repository for correctness and consistency. Treat this as a read-only review: do not edit, apply, commit, push, or open a PR unless the user separately requests those actions.
 

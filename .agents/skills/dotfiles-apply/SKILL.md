@@ -1,9 +1,9 @@
 ---
-name: chezmoi-apply
+name: dotfiles-apply
 description: Use when the user invokes this skill or asks to test and apply changes in this chezmoi repository without creating a pull request. For requested dotfile and configuration edits, run the repo check, review rendered changes, and apply them after successful checks.
 ---
 
-# Test and Apply Chezmoi Changes
+# Test and Apply Dotfiles Changes
 
 Use this workflow when the user wants requested source changes validated and applied to their home directory. This skill does not create commits, push branches, or open pull requests. Follow any more specific user instruction, including a request not to apply.
 
