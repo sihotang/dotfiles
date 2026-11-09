@@ -17,6 +17,10 @@ check:
 	touch "$$tmpdir/chezmoi.toml"; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '$(PROFILE_TEST_DATA)' cat ~/.config/zsh/aliases.zsh > "$$tmpdir/aliases"; \
 	grep -Fx "alias code='profile-use vscode Default'" "$$tmpdir/aliases" > /dev/null; \
+	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '$(PROFILE_TEST_DATA)' execute-template --init --file home/.chezmoi.toml.tmpl > "$$tmpdir/chezmoi.toml"; \
+	grep -Fx '  defaultProfile = "Default"' "$$tmpdir/chezmoi.toml" > /dev/null; \
+	! grep -E '^\[data\.profiles([.]|])' "$$tmpdir/chezmoi.toml" > /dev/null; \
+	python3 -c 'import tomllib,sys; data=tomllib.load(open(sys.argv[1], "rb"))["data"]; assert data["profilesDir"] == ".config/profiles" and "profiles" not in data' "$$tmpdir/chezmoi.toml"; \
 	grep -F "alias dotfiles='profile-use vscode Default" "$$tmpdir/aliases" > /dev/null; \
 	grep -F "alias dotfiles-review='profile-use vscode review" "$$tmpdir/aliases" > /dev/null; \
 	grep -F '$$(dirname "$$(chezmoi source-path)")' "$$tmpdir/aliases" > /dev/null; \
