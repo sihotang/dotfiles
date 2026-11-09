@@ -221,16 +221,15 @@ overrides.
 environment paths for the CLI tools listed in that profile. VS Code keeps its
 usual shared user data, so its primary sign-in is available across profiles;
 profile-specific settings and extension selections remain managed by VS Code.
-When the profile setup script runs during `chezmoi apply`, it invokes VS Code
-for every configured profile with `vscode` enabled. The `--profile` CLI option
-creates a native profile if it does not exist, so newly created profiles start
-empty. Use the Profiles editor to configure profile contents: include
-**Extensions** and leave **Settings** out if the profile should use Default's
-settings while keeping its own extension selection. VS Code applies
-configuration categories omitted from a partial profile from Default. This
-shares the whole Settings category; copying Settings into a profile creates a
-snapshot, not a live link. For individual settings that should stay in sync
-across profiles, use **Apply Setting to all Profiles**. See the
+The profile setup script prepares CLI state directories but does not launch
+VS Code. Start each profile with `code-<profile>` so VS Code starts with the
+matching CLI environment. The VS Code `Default` profile uses Codex's default
+home; other profiles with `codex` enabled use their matching `CODEX_HOME`. The
+`--profile` CLI option creates a native profile if it does not exist, so newly
+created profiles start empty. The managed user settings list its shared keys
+in `workbench.settings.applyToAllProfiles`, so changes to those settings in
+Default or another profile are applied across all profiles. Profile-specific
+settings outside that list remain local. See the
 [VS Code Profiles guide](https://code.visualstudio.com/docs/configure/profiles).
 Chezmoi does not install or synchronize VS Code extensions. The integrated
 terminal and CLI-backed extensions inherit environment paths for the selected
@@ -249,7 +248,9 @@ launcher.
 Codex profile settings live in
 `~/.config/profiles/<profile>/codex/config.toml`. The setup links the shared
 Codex `AGENTS.md`, Claude `CLAUDE.md`, Copilot instructions, and Gemini
-instructions/settings when present. VS Code uses its native profile store;
+instructions/settings when present. Codex profiles use file-based authentication
+so each `CODEX_HOME` keeps its own `auth.json` and can sign in to a separate
+account. VS Code uses its native profile store;
 `code-<profile>` opens that profile and creates an empty one on first use if
 the name does not exist yet.
 

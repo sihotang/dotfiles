@@ -75,8 +75,11 @@ profile-use() {
 {{ if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
 {{ if has "vscode" $tools -}}
       "{{ $profile }}")
+{{ $vscodeProfile := $profile }}
+{{ if not (kindIs "slice" $config) }}{{ with index $config "displayName" }}{{ $vscodeProfile = . }}{{ end }}{{ end }}
 {{ range $tool := $tools -}}
-{{ if eq $tool "codex" }}        profile_env+=("CODEX_HOME=$HOME/{{ $.profilesDir }}/{{ $profile }}/codex")
+{{ if eq $tool "codex" }}{{ if ne $vscodeProfile "Default" }}        profile_env+=("CODEX_HOME=$HOME/{{ $.profilesDir }}/{{ $profile }}/codex")
+{{ end }}
 {{ else if eq $tool "claude" }}        profile_env+=("CLAUDE_CONFIG_DIR=$HOME/{{ $.profilesDir }}/{{ $profile }}/claude")
 {{ else if eq $tool "copilot" }}        profile_env+=("COPILOT_HOME=$HOME/{{ $.profilesDir }}/{{ $profile }}/copilot")
 {{ else if eq $tool "gemini" }}        profile_env+=("GEMINI_CLI_HOME=$HOME/{{ $.profilesDir }}/{{ $profile }}/gemini")
@@ -95,6 +98,16 @@ profile-use() {
     if (( gh_profile_enabled )); then
       (
         unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN
+        if [[ "$vscode_profile" == "Default" ]]; then
+          unset CODEX_HOME
+        fi
+        command env "${profile_env[@]}" code --profile "$vscode_profile" "$@"
+      )
+      return $?
+    fi
+    if [[ "$vscode_profile" == "Default" ]]; then
+      (
+        unset CODEX_HOME
         command env "${profile_env[@]}" code --profile "$vscode_profile" "$@"
       )
       return $?

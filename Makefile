@@ -2,7 +2,7 @@
 
 CHEZMOI ?= chezmoi
 CHEZMOI_SOURCE ?= $(CURDIR)
-PROFILE_TEST_DATA := {"profiles":{"review":{"tools":["gh","vscode"],"displayName":"Review Profile"}}}
+PROFILE_TEST_DATA := {"profiles":{"default":{"tools":["codex","vscode"],"displayName":"Default"},"review":{"tools":["codex","gh","vscode"],"displayName":"Review Profile"}}}
 ASSISTANT_CONFIGS := \
 	.agents/hooks.json \
 	.claude/settings.json \
@@ -19,11 +19,16 @@ check:
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" cat ~/.config/zsh/exports.zsh > "$$tmpdir/exports"; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '$(PROFILE_TEST_DATA)' cat ~/.config/zsh/integrations.zsh > "$$tmpdir/integrations"; \
 	grep -F 'vscode_profile="Review Profile"' "$$tmpdir/integrations" > /dev/null; \
+	! grep -F 'CODEX_HOME=$$HOME/.config/profiles/default/codex' "$$tmpdir/integrations" > /dev/null; \
+	grep -F 'unset CODEX_HOME' "$$tmpdir/integrations" > /dev/null; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '$(PROFILE_TEST_DATA)' execute-template --file home/.chezmoiscripts/run_onchange_setup-profiles.sh.tmpl > "$$tmpdir/setup-profiles.sh"; \
-	grep -F 'code --profile "Review Profile" --new-window' "$$tmpdir/setup-profiles.sh" > /dev/null; \
+	grep -F 'CODEX_HOME=$$HOME/.config/profiles/review/codex' "$$tmpdir/integrations" > /dev/null; \
+	! grep -F 'code --profile' "$$tmpdir/setup-profiles.sh" > /dev/null; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '{"profiles":{}}' execute-template --file home/.chezmoiscripts/run_onchange_setup-profiles.sh.tmpl > "$$tmpdir/setup-profiles-empty.sh"; \
+	grep -F 'cli_auth_credentials_store = "file"' "$$tmpdir/setup-profiles.sh" > /dev/null; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" cat ~/.gemini/settings.json > "$$tmpdir/gemini-settings.json"; \
 	python3 -m json.tool "home/private_Library/private_Application Support/private_Code/User/settings.json" > "$$tmpdir/vscode-settings.json"; \
+	python3 -c 'import json,sys; settings=json.load(open(sys.argv[1])); keys=set(settings)-{"[jsonc]","workbench.settings.applyToAllProfiles"}; assert keys == set(settings["workbench.settings.applyToAllProfiles"]), "VS Code managed settings must be shared across profiles"' "home/private_Library/private_Application Support/private_Code/User/settings.json"; \
 	for file in home/dot_zprofile home/dot_zshrc home/dot_config/zsh/functions.zsh "$$tmpdir/aliases" "$$tmpdir/exports" "$$tmpdir/integrations"; do \
 	  zsh -n "$$file"; \
 	done; \
