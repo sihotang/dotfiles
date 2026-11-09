@@ -1,4 +1,10 @@
 #!/bin/sh
+{{- $hasVSCodeProfiles := false -}}
+{{- range $profile, $config := .profiles -}}
+{{- $tools := $config -}}
+{{- if not (kindIs "slice" $config) -}}{{- $tools = index $config "tools" -}}{{- end -}}
+{{- if has "vscode" $tools -}}{{- $hasVSCodeProfiles = true -}}{{- end -}}
+{{- end -}}
 {{- range $profile, $config := .profiles -}}
 {{ if not (regexMatch "^[a-zA-Z0-9._-]+$" $profile) }}{{ fail (printf "invalid profile name %q" $profile) }}{{ end }}
 {{ $tools := $config }}
@@ -7,10 +13,18 @@
 {{ if not (or (eq $tool "codex") (eq $tool "claude") (eq $tool "copilot") (eq $tool "gemini") (eq $tool "gh") (eq $tool "vscode") (eq $tool "antigravity")) }}{{ fail (printf "unsupported profile tool %q in profile %q" $tool $profile) }}{{ end }}
 {{ end -}}
 {{ end -}}
+{{ printf "\n" }}
 # Initializes state directories for configured CLI and app profiles.
 set -eu
 umask 077
 
+{{ if $hasVSCodeProfiles -}}
+if ! command -v code >/dev/null 2>&1; then
+  printf '%s\n' "setup-profiles: VS Code CLI ('code') is required for configured VS Code profiles" >&2
+  exit 1
+fi
+
+{{ end -}}
 profiles_base="{{ .chezmoi.homeDir }}/{{ .profilesDir }}"
 
 remove_unconfigured_profiles() {
@@ -75,5 +89,15 @@ link_if_missing "{{ $.chezmoi.homeDir }}/.gemini/settings.json" "$profile_dir/se
 {{ else if eq $tool "gh" -}}
 create_profile gh '{{ $profile }}'
 {{ end -}}
+{{ end -}}
+{{ end -}}
+
+{{ range $profile, $config := .profiles -}}
+{{ $tools := $config }}
+{{ if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
+{{ if has "vscode" $tools -}}
+{{ $displayName := $profile }}
+{{ if not (kindIs "slice" $config) }}{{ with index $config "displayName" }}{{ $displayName = . }}{{ end }}{{ end }}
+code --profile {{ $displayName | quote }} --new-window
 {{ end -}}
 {{ end -}}
