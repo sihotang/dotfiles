@@ -2,3 +2,11 @@
 [data]
   machine = "{{ .chezmoi.hostname }}"
   os = "{{ .chezmoi.os }}"
+  ollamaHost = "{{ .ollamaHost }}"
+  workspaceDir = "{{ .workspaceDir }}"
+  # Default root for per-profile application data.
+  profilesDir = "{{ .profilesDir }}"
+
+# Add named profiles in this table in the machine-local config.
+[data.profiles]
+{{ .profiles | toToml -}}
