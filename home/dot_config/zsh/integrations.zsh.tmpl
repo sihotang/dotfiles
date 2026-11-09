@@ -56,8 +56,10 @@ profile-use() {
   local profile_tool="$tool"
   [[ "$tool" == git ]] && profile_tool=gh
   if ! ai-profile-enabled "$profile_tool" "$profile"; then
-    print -u2 "profile-use: profile is not configured for $tool: $profile"
-    return 1
+    if [[ "$tool" != vscode || "$profile" != Default ]]; then
+      print -u2 "profile-use: profile is not configured for $tool: $profile"
+      return 1
+    fi
   fi
   shift 2
   if [[ "$tool" == vscode ]]; then

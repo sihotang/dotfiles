@@ -2,7 +2,7 @@
 
 CHEZMOI ?= chezmoi
 CHEZMOI_SOURCE ?= $(CURDIR)
-PROFILE_TEST_DATA := {"profiles":{"default":{"tools":["codex","vscode"],"displayName":"Default"},"review":{"tools":["codex","gh","vscode"],"displayName":"Review Profile"}}}
+PROFILE_TEST_DATA := {"defaultProfile":"Default","profiles":{"default":{"tools":["codex","vscode"],"displayName":"Default"},"review":{"tools":["codex","gh","vscode"],"displayName":"Review Profile"}}}
 ASSISTANT_CONFIGS := \
 	.agents/hooks.json \
 	.claude/settings.json \
@@ -16,6 +16,7 @@ check:
 	trap 'rm -rf "$$tmpdir"' EXIT; \
 	touch "$$tmpdir/chezmoi.toml"; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '$(PROFILE_TEST_DATA)' cat ~/.config/zsh/aliases.zsh > "$$tmpdir/aliases"; \
+	grep -Fx "alias code='profile-use vscode Default'" "$$tmpdir/aliases" > /dev/null; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" cat ~/.config/zsh/exports.zsh > "$$tmpdir/exports"; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '$(PROFILE_TEST_DATA)' cat ~/.config/zsh/integrations.zsh > "$$tmpdir/integrations"; \
 	grep -F 'vscode_profile="Review Profile"' "$$tmpdir/integrations" > /dev/null; \
