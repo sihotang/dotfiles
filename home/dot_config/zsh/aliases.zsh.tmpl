@@ -36,7 +36,9 @@ ws() {
 }
 alias c="claude"
 {{- if .profiles }}
-{{- range $profile, $tools := .profiles -}}
+{{- range $profile, $config := .profiles -}}
+{{ $tools := $config }}
+{{ if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
 {{ range $tool := $tools -}}
 {{ if eq $tool "vscode" -}}
 alias code-{{ $profile }}='profile-use vscode {{ $profile }}'

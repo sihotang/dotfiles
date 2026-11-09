@@ -1,6 +1,8 @@
 #!/bin/sh
-{{- range $profile, $tools := .profiles -}}
+{{- range $profile, $config := .profiles -}}
 {{ if not (regexMatch "^[a-zA-Z0-9._-]+$" $profile) }}{{ fail (printf "invalid profile name %q" $profile) }}{{ end }}
+{{ $tools := $config }}
+{{ if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
 {{ range $tool := $tools -}}
 {{ if not (or (eq $tool "codex") (eq $tool "claude") (eq $tool "copilot") (eq $tool "gemini") (eq $tool "gh") (eq $tool "vscode") (eq $tool "antigravity")) }}{{ fail (printf "unsupported profile tool %q in profile %q" $tool $profile) }}{{ end }}
 {{ end -}}
@@ -17,7 +19,9 @@ remove_unconfigured_profiles() {
     [ -d "$profile_dir" ] || continue
     profile_name=${profile_dir##*/}
     case "$profile_name" in
-{{ range $profile, $tools := .profiles -}}
+{{ range $profile, $config := .profiles -}}
+{{ $tools := $config }}
+{{ if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
 {{ if $tools }}      '{{ $profile }}') ;;
 {{ end -}}
 {{ end -}}
@@ -44,7 +48,9 @@ link_if_missing() {
   fi
 }
 
-{{ range $profile, $tools := .profiles -}}
+{{ range $profile, $config := .profiles -}}
+{{ $tools := $config }}
+{{ if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
 {{ range $tool := $tools -}}
 {{ if eq $tool "codex" -}}
 create_profile codex '{{ $profile }}'
