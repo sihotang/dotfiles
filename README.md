@@ -203,7 +203,9 @@ project-level session-start hooks from `.github/hooks/hooks.json`,
 `.agents/hooks.json`, respectively. Each hook reminds the provider to follow
 the repository's `dotfiles` skill workflow. These hook files are
 provider-specific; review and trust them in each provider before enabling
-them.
+them. Run `make check-assistant-configs` to validate their JSON syntax; this
+check is separate from the chezmoi dotfiles checks and does not validate
+provider-specific runtime behavior.
 
 Copilot CLI reads its settings and local state from `COPILOT_HOME`, but its
 OAuth credential may be held in the operating system keychain. Separate
