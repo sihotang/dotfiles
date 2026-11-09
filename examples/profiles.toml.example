@@ -1,0 +1,12 @@
+# Copy these profiles into home/.chezmoidata/profiles.toml and adjust as needed.
+[profiles.personal]
+tools = ["codex", "claude", "copilot", "gemini", "gh", "antigravity", "vscode"]
+displayName = "Personal"
+
+[profiles.work]
+tools = ["codex", "gh", "vscode"]
+displayName = "Work"
+
+[profiles.client]
+tools = ["codex", "gh", "vscode"]
+displayName = "Client"

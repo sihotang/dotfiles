@@ -8,8 +8,10 @@ command -v mise >/dev/null 2>&1 && eval "$(mise activate zsh)"
 command -v atuin >/dev/null 2>&1 && eval "$(atuin init zsh)"
 command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
 
-{{- if .profiles }}
-{{- range $profile, $config := .profiles -}}
+{{- $profiles := (index . "profiles") | default dict }}
+{{- if $profiles }}
+{{- $profilesDir := (index . "profilesDir") | default ".config/profiles" }}
+{{- range $profile, $config := $profiles -}}
 {{ if not (regexMatch "^[a-zA-Z0-9._-]+$" $profile) }}{{ fail (printf "invalid profile name %q" $profile) }}{{ end }}
 {{ $tools := $config }}
 {{ if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
@@ -20,7 +22,7 @@ command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
 
 ai-profile-enabled() {
   case "$1:$2" in
-{{ range $profile, $config := .profiles -}}
+{{ range $profile, $config := $profiles -}}
 {{ $tools := $config }}
 {{ if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
 {{ range $tool := $tools -}}
@@ -66,13 +68,13 @@ profile-use() {
     profile_env=()
     local vscode_profile="$profile"
     case "$profile" in
-{{ range $profile, $config := .profiles }}
+{{ range $profile, $config := $profiles }}
 {{ if not (kindIs "slice" $config) }}{{ with index $config "displayName" }}      "{{ $profile }}") vscode_profile={{ . | quote }} ;;
 {{ end }}{{ end }}
 {{ end }}
     esac
     case "$profile" in
-{{ range $profile, $config := .profiles -}}
+{{ range $profile, $config := $profiles -}}
 {{ $tools := $config }}
 {{ if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
 {{ if has "vscode" $tools -}}
@@ -80,13 +82,13 @@ profile-use() {
 {{ $vscodeProfile := $profile }}
 {{ if not (kindIs "slice" $config) }}{{ with index $config "displayName" }}{{ $vscodeProfile = . }}{{ end }}{{ end }}
 {{ range $tool := $tools -}}
-{{ if eq $tool "codex" }}{{ if ne $vscodeProfile "Default" }}        profile_env+=("CODEX_HOME=$HOME/{{ $.profilesDir }}/{{ $profile }}/codex")
+{{ if eq $tool "codex" }}{{ if ne $vscodeProfile "Default" }}        profile_env+=("CODEX_HOME=$HOME/{{ $profilesDir }}/{{ $profile }}/codex")
 {{ end }}
-{{ else if eq $tool "claude" }}        profile_env+=("CLAUDE_CONFIG_DIR=$HOME/{{ $.profilesDir }}/{{ $profile }}/claude")
-{{ else if eq $tool "copilot" }}        profile_env+=("COPILOT_HOME=$HOME/{{ $.profilesDir }}/{{ $profile }}/copilot")
-{{ else if eq $tool "gemini" }}        profile_env+=("GEMINI_CLI_HOME=$HOME/{{ $.profilesDir }}/{{ $profile }}/gemini")
+{{ else if eq $tool "claude" }}        profile_env+=("CLAUDE_CONFIG_DIR=$HOME/{{ $profilesDir }}/{{ $profile }}/claude")
+{{ else if eq $tool "copilot" }}        profile_env+=("COPILOT_HOME=$HOME/{{ $profilesDir }}/{{ $profile }}/copilot")
+{{ else if eq $tool "gemini" }}        profile_env+=("GEMINI_CLI_HOME=$HOME/{{ $profilesDir }}/{{ $profile }}/gemini")
 {{ else if eq $tool "gh" }}        gh_profile_enabled=1
-        profile_env+=("GH_CONFIG_DIR=$HOME/{{ $.profilesDir }}/{{ $profile }}/gh")
+        profile_env+=("GH_CONFIG_DIR=$HOME/{{ $profilesDir }}/{{ $profile }}/gh")
         git_helper_prefix=$(printf '\041')
         profile_env+=("GIT_CONFIG_COUNT=2" "GIT_CONFIG_KEY_0=credential.helper" "GIT_CONFIG_VALUE_0=" "GIT_CONFIG_KEY_1=credential.helper" "GIT_CONFIG_VALUE_1=${git_helper_prefix}gh auth git-credential")
 {{ end -}}
@@ -117,7 +119,7 @@ profile-use() {
     command env "${profile_env[@]}" code --profile "$vscode_profile" "$@"
     return $?
   fi
-  profile_dir="$HOME/{{ .profilesDir }}/$profile/$profile_tool"
+  profile_dir="$HOME/{{ $profilesDir }}/$profile/$profile_tool"
   if [[ ! -d "$profile_dir" ]]; then
     print -u2 "profile-use: profile not found: $tool/$profile"
     return 1

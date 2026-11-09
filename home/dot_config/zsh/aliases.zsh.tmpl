@@ -35,14 +35,15 @@ ws() {
   builtin cd -- "$HOME"/{{ .workspaceDir | quote }}
 }
 alias c="claude"
-{{- if .profiles }}
+{{- $profiles := (index . "profiles") | default dict }}
+{{- if $profiles }}
 alias dotfiles='profile-use vscode Default "$(dirname "$(chezmoi source-path)")"'
 {{- with (index . "defaultProfile") }}
 {{- $defaultProfile := . }}
 {{- if eq $defaultProfile "Default" }}
 alias code='profile-use vscode Default'
 {{- else }}
-{{- $config := index $.profiles $defaultProfile }}
+{{- $config := index $profiles $defaultProfile }}
 {{- if not $config }}{{ fail (printf "default profile %q is not configured" $defaultProfile) }}{{ end }}
 {{- $tools := $config }}
 {{- if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
@@ -50,7 +51,7 @@ alias code='profile-use vscode Default'
 alias code='profile-use vscode {{ $defaultProfile }}'
 {{- end }}
 {{- end }}
-{{- range $profile, $config := .profiles -}}
+{{- range $profile, $config := $profiles -}}
 {{ $tools := $config }}
 {{ if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
 {{ range $tool := $tools -}}

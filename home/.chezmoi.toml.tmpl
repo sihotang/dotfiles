@@ -2,18 +2,7 @@
 [data]
   machine = "{{ .chezmoi.hostname }}"
   os = "{{ .chezmoi.os }}"
-  ollamaHost = "{{ .ollamaHost }}"
-  workspaceDir = "{{ .workspaceDir }}"
-  # Default root for per-profile application data.
-  profilesDir = "{{ .profilesDir }}"
-
-# Add named profile objects in this table in the machine-local config.
-[data.profiles]
-{{ range $profile, $config := .profiles -}}
-[data.profiles.{{ printf "%q" $profile }}]
-{{ $tools := $config }}
-{{ if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
-tools = {{ $tools | toToml }}
-{{ if not (kindIs "slice" $config) }}{{ with index $config "displayName" }}displayName = {{ . | toToml }}
-{{ end }}{{ end }}
-{{ end -}}
+  ollamaHost = {{ (index . "ollamaHost" | default "127.0.0.1:11434") | toToml }}
+  workspaceDir = {{ (index . "workspaceDir" | default "Workspace") | toToml }}
+  profilesDir = {{ (index . "profilesDir" | default ".config/profiles") | toToml }}
+  defaultProfile = {{ (index . "defaultProfile" | default "Default") | toToml }}
