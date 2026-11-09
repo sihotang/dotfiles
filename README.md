@@ -94,7 +94,7 @@ home directory are managed outputs.
 
 ## Machine-specific settings
 
-Shared template defaults live in `home/.chezmoidata.yaml`. Override them with
+Shared template defaults live in `home/.chezmoidata.toml`. Override them with
 per-machine values in `~/.config/chezmoi/chezmoi.toml`, outside this repository.
 The `home/.chezmoi.toml.tmpl` seeds local `[data]` values for the detected
 hostname and operating system. Add or override other values locally, for example:
@@ -135,40 +135,26 @@ keep that file local and out of this repository.
 
 ## Profiles for CLI tools and app integrations
 
-Configure a map of profile names to the CLI tools and app integrations enabled
-for each profile in the machine-local `~/.config/chezmoi/chezmoi.toml`:
-
-```toml
-[data]
-profilesDir = ".config/profiles"
-defaultProfile = "work"
-
-[data.profiles.work]
-tools = ["codex", "gh", "vscode"]
-displayName = "Work"
-
-[data.profiles.personal]
-tools = ["codex", "claude", "copilot", "gemini", "gh", "antigravity", "vscode"]
-displayName = "Personal"
-```
+Configure profiles in the machine-local, Git-ignored
+`home/.chezmoidata/profiles.toml` file. Create the `.chezmoidata`
+directory under the source root (`home/` in this repo), then copy
+`examples/profiles.toml.example` as a starting point.
 
 Each profile is an object with a `tools` array and optional `displayName`.
 Profile IDs remain the stable names used by launchers and CLI directories.
 `displayName` is passed to integrations that support a separate display name;
 for VS Code it selects the matching native profile. If omitted, the profile ID
-is used. Set `defaultProfile` to a configured profile that enables `vscode` to
-make plain `code` open that profile every time. Set it to `"Default"` to use
-VS Code's built-in Default Profile. Convert existing array entries under
-`[data.profiles]` to nested profile tables. For example:
+is used. The local `profiles.toml` file is ignored by Git, so profile
+definitions stay on that machine. Other machine-specific options such as
+`defaultProfile` can remain in `~/.config/chezmoi/chezmoi.toml`. Set
+`defaultProfile` to a configured profile that enables `vscode` to make plain
+`code` open that profile every time. Set it to `"Default"` to use VS Code's
+built-in Default Profile. `profilesDir` defaults to `.config/profiles` when
+omitted. For example, the machine-local config can contain:
 
 ```toml
-[data.profiles.sio]
-tools = ["codex", "gh", "vscode"]
-displayName = "Sio"
-
-[data.profiles.sio-shared]
-tools = ["codex", "claude", "vscode"]
-displayName = "Sio Shared"
+[data]
+defaultProfile = "work"
 ```
 
 Then `code-sio-shared` opens the VS Code profile named `Sio Shared`.

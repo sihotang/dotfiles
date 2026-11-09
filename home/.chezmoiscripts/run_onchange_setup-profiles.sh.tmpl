@@ -1,4 +1,5 @@
 #!/bin/sh
+{{- $profilesDir := (index . "profilesDir") | default ".config/profiles" }}
 {{- range $profile, $config := .profiles -}}
 {{ if not (regexMatch "^[a-zA-Z0-9._-]+$" $profile) }}{{ fail (printf "invalid profile name %q" $profile) }}{{ end }}
 {{ $tools := $config }}
@@ -12,7 +13,7 @@
 set -eu
 umask 077
 
-profiles_base="{{ .chezmoi.homeDir }}/{{ .profilesDir }}"
+profiles_base="{{ .chezmoi.homeDir }}/{{ $profilesDir }}"
 
 remove_unconfigured_profiles() {
   [ -d "$profiles_base" ] || return 0
