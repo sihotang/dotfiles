@@ -172,6 +172,10 @@ displayName = "Sio Shared"
 ```
 
 Then `code-sio-shared` opens the VS Code profile named `Sio Shared`.
+`dotfiles` opens this chezmoi source directory in the built-in Default Profile,
+and `dotfiles-sio-shared` opens it in the `Sio Shared` profile. A
+`dotfiles-<profile>` launcher is generated for each configured profile that
+enables `vscode`.
 
 This creates directories such as `~/.config/profiles/work/codex/` and
 `~/.config/profiles/personal/<cli>/`. Run `chezmoi apply` to create them and

@@ -36,6 +36,7 @@ ws() {
 }
 alias c="claude"
 {{- if .profiles }}
+alias dotfiles='profile-use vscode Default "$(dirname "$(chezmoi source-path)")"'
 {{- with (index . "defaultProfile") }}
 {{- $defaultProfile := . }}
 {{- if eq $defaultProfile "Default" }}
@@ -55,6 +56,7 @@ alias code='profile-use vscode {{ $defaultProfile }}'
 {{ range $tool := $tools -}}
 {{ if eq $tool "vscode" -}}
 alias code-{{ $profile }}='profile-use vscode {{ $profile }}'
+alias dotfiles-{{ $profile }}='profile-use vscode {{ $profile }} "$(dirname "$(chezmoi source-path)")"'
 {{ else if eq $tool "antigravity" -}}
 {{ else if eq $tool "gh" -}}
 alias gh-{{ $profile }}='profile-use gh {{ $profile }}'
