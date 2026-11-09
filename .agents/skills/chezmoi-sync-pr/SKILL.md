@@ -1,9 +1,9 @@
 ---
-name: chezmoi-create-pr
+name: chezmoi-sync-pr
 description: Use when the user invokes this skill or asks to create or update a PR for a chezmoi configuration change in this repository. After checks pass and reviewed changes are applied, commit, push, and create or update the PR.
 ---
 
-# Test, Apply, and Create a PR for Chezmoi Changes
+# Sync Chezmoi Changes and Create a PR
 
 Use this workflow for requested changes to this chezmoi repository. Invoking this skill authorizes applying the requested target changes to the user's home directory and publishing the source change in a pull request. Once checks pass and apply verification succeeds, continue through commit, push, and PR creation or update in the same run. If there are no managed home targets, treat apply as a no-op and continue after checks pass. Do not merge the pull request. Follow any more specific instruction from the user, including a request not to apply or publish.
 
