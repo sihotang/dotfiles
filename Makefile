@@ -27,15 +27,20 @@ check:
 	grep -F "alias dotfiles-review='profile-use vscode review" "$$tmpdir/aliases" > /dev/null; \
 	grep -F '$$(dirname "$$(chezmoi source-path)")' "$$tmpdir/aliases" > /dev/null; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" cat ~/.config/zsh/exports.zsh > "$$tmpdir/exports"; \
-	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '$(PROFILE_TEST_DATA)' cat ~/.config/zsh/integrations.zsh > "$$tmpdir/integrations"; \
+	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '$(PROFILE_TEST_DATA)' cat ~/.config/zsh/functions.zsh > "$$tmpdir/functions"; \
+	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '{"profiles":null}' cat ~/.config/zsh/functions.zsh > "$$tmpdir/functions-no-profiles"; \
+	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" cat ~/.config/zsh/integrations.zsh > "$$tmpdir/integrations"; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '{"profiles":null}' cat ~/.config/zsh/integrations.zsh > "$$tmpdir/integrations-no-profiles"; \
-	grep -F 'vscode_profile="Review Profile"' "$$tmpdir/integrations" > /dev/null; \
-	grep -F 'CODEX_HOME=$$HOME/.config/profiles/review/codex' "$$tmpdir/integrations" > /dev/null; \
-	! grep -F 'CODEX_HOME=$$HOME/.config/profiles/default/codex' "$$tmpdir/integrations" > /dev/null; \
-	grep -F 'export GIT_CONFIG_KEY_3=user.email' "$$tmpdir/integrations" > /dev/null; \
-	grep -F "export GIT_CONFIG_VALUE_2='Review User'" "$$tmpdir/integrations" > /dev/null; \
-	grep -F "export GIT_CONFIG_VALUE_3='review@example.test'" "$$tmpdir/integrations" > /dev/null; \
-	grep -F 'unset CODEX_HOME' "$$tmpdir/integrations" > /dev/null; \
+	grep -F 'vscode_profile="Review Profile"' "$$tmpdir/functions" > /dev/null; \
+	grep -F 'CODEX_HOME=$$HOME/.config/profiles/review/codex' "$$tmpdir/functions" > /dev/null; \
+	! grep -F 'CODEX_HOME=$$HOME/.config/profiles/default/codex' "$$tmpdir/functions" > /dev/null; \
+	grep -F 'export GIT_CONFIG_KEY_3=user.email' "$$tmpdir/functions" > /dev/null; \
+	grep -F "export GIT_CONFIG_VALUE_2='Review User'" "$$tmpdir/functions" > /dev/null; \
+	grep -F "export GIT_CONFIG_VALUE_3='review@example.test'" "$$tmpdir/functions" > /dev/null; \
+	grep -F 'unset CODEX_HOME' "$$tmpdir/functions" > /dev/null; \
+	grep -F 'profile-enabled() {' "$$tmpdir/functions" > /dev/null; \
+	! grep -F 'ai-profile-enabled' "$$tmpdir/functions" > /dev/null; \
+	! grep -F 'ai-use() {' "$$tmpdir/functions" > /dev/null; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '$(PROFILE_TEST_DATA)' execute-template --file home/.chezmoiscripts/run_onchange_setup-profiles.sh.tmpl > "$$tmpdir/setup-profiles.sh"; \
 	grep -F '/.config/profiles"' "$$tmpdir/setup-profiles.sh" > /dev/null; \
 	! grep -F 'code --profile' "$$tmpdir/setup-profiles.sh" > /dev/null; \
@@ -48,7 +53,7 @@ check:
 	PATH="$$tmpdir/bin:$$PATH" "$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" execute-template --file 'home/private_Library/private_Application Support/private_Code/User/settings.json.tmpl' > "$$tmpdir/vscode-settings.json"; \
 	python3 -m json.tool "$$tmpdir/vscode-settings.json" > /dev/null; \
 	python3 -c 'import json,sys; settings=json.load(open(sys.argv[1])); keys=set(settings)-{"[jsonc]","workbench.settings.applyToAllProfiles"}; assert keys == set(settings["workbench.settings.applyToAllProfiles"]), "VS Code managed settings must be shared across profiles"; assert settings["todo-tree.ripgrep.ripgrep"] == "/mise-test/ripgrep/rg", "VS Code ripgrep path must come from mise which rg"' "$$tmpdir/vscode-settings.json"; \
-	for file in home/dot_zprofile home/dot_zshrc home/dot_config/zsh/functions.zsh "$$tmpdir/aliases" "$$tmpdir/aliases-no-profiles" "$$tmpdir/exports" "$$tmpdir/integrations" "$$tmpdir/integrations-no-profiles"; do \
+	for file in home/dot_zprofile home/dot_zshrc "$$tmpdir/aliases" "$$tmpdir/aliases-no-profiles" "$$tmpdir/exports" "$$tmpdir/functions" "$$tmpdir/functions-no-profiles" "$$tmpdir/integrations" "$$tmpdir/integrations-no-profiles"; do \
 	  zsh -n "$$file"; \
 	done; \
 	sh -n "$$tmpdir/setup-profiles.sh" "$$tmpdir/setup-profiles-empty.sh" home/.chezmoiscripts/run_after_lint-zsh.sh; \

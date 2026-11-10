@@ -208,8 +208,7 @@ profile-use gh personal auth status
 profile-use codex personal --help
 ```
 
-`profile-use TOOL PROFILE [arguments…]` is the general launcher. `ai-use` stays
-available as a compatibility wrapper. The generated
+`profile-use TOOL PROFILE [arguments…]` is the general launcher. The generated
 `<tool>-<profile>` shortcuts are equivalent. Plain CLI commands continue to
 use their normal configuration directories. Gemini stores its files in a
 `.gemini/` directory inside the profile's Gemini directory.
@@ -299,19 +298,12 @@ settings:
 make check
 ```
 
-The target performs these checks in order:
-
-1. Renders the Zsh aliases and exports modules and `~/.gemini/settings.json`
-   with `chezmoi cat` into a temporary directory.
-2. Checks zsh syntax for `home/dot_zprofile`, `home/dot_zshrc`,
-   `home/dot_config/zsh/functions.zsh`, and the rendered aliases and exports.
-3. Parses the rendered Gemini settings as JSON with Python's standard library.
-4. Runs `git diff --check` to catch whitespace errors in tracked changes.
-5. Prints `chezmoi diff` so you can review how the source differs from the
-   files in your home directory.
+The target renders the Zsh modules, profile setup script, Gemini settings, and
+VS Code settings into a temporary directory. It checks profile template
+behavior, Zsh and POSIX shell syntax, JSON validity, and tracked whitespace.
 
 The command needs chezmoi, zsh, Python 3, and Git. It does not apply changes;
-review the final chezmoi diff and use `chezmoi apply` when you are ready.
+review `chezmoi diff` separately and use `chezmoi apply` when you are ready.
 GitHub Actions runs this check for pull requests targeting `main` and pushes to
 `main`.
 
