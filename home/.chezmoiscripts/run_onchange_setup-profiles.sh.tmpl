@@ -6,7 +6,7 @@
 {{ $tools := $config }}
 {{ if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
 {{ range $tool := $tools -}}
-{{ if not (or (eq $tool "codex") (eq $tool "claude") (eq $tool "copilot") (eq $tool "gemini") (eq $tool "gh") (eq $tool "vscode") (eq $tool "antigravity")) }}{{ fail (printf "unsupported profile tool %q in profile %q" $tool $profile) }}{{ end }}
+{{ if not (or (eq $tool "codex") (eq $tool "claude") (eq $tool "copilot") (eq $tool "gemini") (eq $tool "gh") (eq $tool "git") (eq $tool "vscode") (eq $tool "antigravity")) }}{{ fail (printf "unsupported profile tool %q in profile %q" $tool $profile) }}{{ end }}
 {{ end -}}
 {{ end -}}
 {{ printf "\n" }}

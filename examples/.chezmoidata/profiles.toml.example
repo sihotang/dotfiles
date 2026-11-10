@@ -1,19 +1,19 @@
 # Copy these profiles into home/.chezmoidata/profiles.toml and adjust as needed.
 [profiles.personal]
-tools = ["codex", "claude", "copilot", "gemini", "gh", "antigravity", "vscode"]
-displayName = "Personal"
-
-[profiles.personal.git]
 name = "Your Personal Name"
 email = "you@example.com"
+displayName = "Personal"
+tools = ["vscode", "gh", "git", "codex", "claude", "copilot", "gemini", "antigravity"]
+
+[profiles.personal.git]
+name = "Your Git Name"
+email = "another@example.com"
 
 [profiles.work]
-tools = ["codex", "gh", "vscode"]
-displayName = "Work"
-
-[profiles.work.git]
 name = "Your Work Name"
 email = "you@company.example"
+tools = ["codex", "gh", "vscode"]
+displayName = "Work"
 
 [profiles.client]
 tools = ["codex", "gh", "vscode"]

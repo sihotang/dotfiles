@@ -140,7 +140,8 @@ Configure profiles in the machine-local, Git-ignored
 directory under the source root (`home/` in this repo), then copy
 `examples/.chezmoidata/profiles.toml.example` as a starting point.
 
-Each profile is an object with a `tools` array and optional `displayName`.
+Each profile is an object with optional `name`, `email`, `displayName`, and a
+`tools` array. `name` and `email` are the profile-level Git identity fallback.
 Profile IDs remain the stable names used by launchers and CLI directories.
 `displayName` is passed to integrations that support a separate display name;
 for VS Code it selects the matching native profile. If omitted, the profile ID
@@ -157,24 +158,25 @@ omitted. For example, the machine-local config can contain:
 defaultProfile = "work"
 ```
 
-For a separate Git commit identity, add a `git` table to each profile that
-enables `gh` and needs one:
+Git identity follows `profiles.<id>.git.name/email`, then the profile-level
+`name/email` field independently, then Git's global configuration. A `git`
+table only affects profiles that include `git` in `tools`. For example:
 
 ```toml
-[profiles.personal.git]
+[profiles.personal]
 name = "Your Personal Name"
 email = "you@example.com"
+tools = ["git", "gh"]
 
-[profiles.work.git]
-name = "Your Work Name"
-email = "you@company.example"
+[profiles.personal.git]
+name = "Your Git Name"
+email = "another@example.com"
 ```
 
 Keep real names and email addresses in the ignored local `profiles.toml` file.
-The `git-<profile>` launcher uses that profile's identity and GitHub CLI
-credentials. The matching `code-<profile>` integrated terminal also uses the
-identity when the profile enables `gh`. Profiles without a `git` table keep the
-global identity from `~/.gitconfig.local`.
+The `git-<profile>` launcher uses the configured identity and, when `gh` is
+also enabled, that profile's GitHub CLI credentials. Profiles without an
+identity override use the global identity from `~/.gitconfig.local`.
 
 Then `code-sio-shared` opens the VS Code profile named `Sio Shared`.
 `dotfiles` opens this chezmoi source directory in the built-in Default Profile,
