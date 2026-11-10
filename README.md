@@ -122,6 +122,10 @@ live in `~/.config/starship.toml`, and Atuin settings live in
 that Atuin directory. The existing `~/.atuin/config.toml` is left untouched.
 Ghostty is installed as a Homebrew cask on macOS, with its config at
 `~/.config/ghostty/config`.
+Google Chrome is installed as a Homebrew cask on macOS.
+OrbStack is installed as a Homebrew cask on macOS.
+Cursor is installed as a Homebrew cask on macOS.
+Obsidian is installed as a Homebrew cask on macOS.
 Neovim is installed as a Homebrew formula, and its configuration reuses the
 shared Vim settings at `~/.config/nvim/init.vim`.
 Visual Studio Code is installed as a Homebrew cask on macOS, with portable user
