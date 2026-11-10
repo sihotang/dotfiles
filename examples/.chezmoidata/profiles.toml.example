@@ -1,4 +1,12 @@
 # Copy these profiles into home/.chezmoidata/profiles.toml and adjust as needed.
+[profiles]
+instructions = """
+Use small, reviewable changes for every configured profile.
+"""
+additionalInstructions = """
+Include validation results in summaries for every configured profile.
+"""
+
 [profiles.personal]
 name = "Your Personal Name"
 email = "you@example.com"

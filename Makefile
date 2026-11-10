@@ -3,6 +3,7 @@
 CHEZMOI ?= chezmoi
 CHEZMOI_SOURCE ?= $(CURDIR)
 PROFILE_TEST_DATA := {"defaultProfile":"Default","profiles":{"default":{"tools":["codex","vscode"],"displayName":"Default"},"review":{"tools":["codex","gh","git","vscode"],"displayName":"Review Profile","name":"Profile User","email":"profile@example.test","git":{"name":"Review User","email":"review@example.test"}}}}
+PROFILE_INSTRUCTION_TEST_DATA := {"profiles":{"instructions":"All profile base","additionalInstructions":"All profile addendum","inherit":{"tools":["codex"]},"empty_profile":{"tools":["codex"],"instructions":"","additionalInstructions":""},"empty_tool":{"tools":["codex"],"instructions":"Parent profile base","additionalInstructions":"Parent profile addendum","codex":{"instructions":"","additionalInstructions":""}},"specific":{"tools":["codex"],"instructions":"Specific\u0027s base","additionalInstructions":"Specific addendum"},"tool":{"tools":["codex"],"instructions":"Profile base","additionalInstructions":"Profile addendum","codex":{"instructions":"Tool base","additionalInstructions":"Tool addendum"}}}}
 ASSISTANT_CONFIGS := \
 	.agents/hooks.json \
 	.claude/settings.json \
@@ -26,6 +27,37 @@ check:
 	printf '%s\n' 'Keep existing local data' > "$$tmpdir/data-bootstrap-source/home/.chezmoidata/ai.toml"; \
 	sh "$$tmpdir/data-bootstrap-source/scripts/copy-example-data.sh" "$$tmpdir/data-bootstrap-source" > /dev/null; \
 	grep -Fx 'Keep existing local data' "$$tmpdir/data-bootstrap-source/home/.chezmoidata/ai.toml" > /dev/null; \
+	mkdir -p "$$tmpdir/profile-instruction-source/home/.chezmoiscripts" "$$tmpdir/profile-instruction-home/.codex"; \
+	printf '%s\n' home > "$$tmpdir/profile-instruction-source/.chezmoiroot"; \
+	printf '%s\n' 'Shared agent baseline' > "$$tmpdir/profile-instruction-home/.codex/AGENTS.md"; \
+	cp home/.chezmoiscripts/run_onchange_setup-profiles.sh.tmpl "$$tmpdir/profile-instruction-source/home/.chezmoiscripts/setup.tmpl"; \
+	"$(CHEZMOI)" --source "$$tmpdir/profile-instruction-source" --config "$$tmpdir/chezmoi.toml" --override-data '$(PROFILE_INSTRUCTION_TEST_DATA)' execute-template --file "$$tmpdir/profile-instruction-source/home/.chezmoiscripts/setup.tmpl" > "$$tmpdir/profile-instruction-setup.sh"; \
+	python3 -c 'import pathlib,sys; text=pathlib.Path(sys.argv[1]).read_text().replace("$$HOME", sys.argv[2]); pathlib.Path(sys.argv[3]).write_text(text)' "$$tmpdir/profile-instruction-setup.sh" "$$tmpdir/profile-instruction-home" "$$tmpdir/profile-instruction-setup-isolated.sh"; \
+	! grep -F '/Users/sio' "$$tmpdir/profile-instruction-setup-isolated.sh" > /dev/null; \
+	sh -n "$$tmpdir/profile-instruction-setup-isolated.sh"; \
+	sh "$$tmpdir/profile-instruction-setup-isolated.sh"; \
+	grep -Fx 'All profile base' "$$tmpdir/profile-instruction-home/.config/profiles/inherit/codex/AGENTS.md" > /dev/null; \
+	grep -Fx 'All profile addendum' "$$tmpdir/profile-instruction-home/.config/profiles/inherit/codex/AGENTS.md" > /dev/null; \
+	grep -Fx "Specific's base" "$$tmpdir/profile-instruction-home/.config/profiles/specific/codex/AGENTS.md" > /dev/null; \
+	grep -Fx 'All profile addendum' "$$tmpdir/profile-instruction-home/.config/profiles/specific/codex/AGENTS.md" > /dev/null; \
+	grep -Fx 'Specific addendum' "$$tmpdir/profile-instruction-home/.config/profiles/specific/codex/AGENTS.md" > /dev/null; \
+	grep -Fx 'Tool base' "$$tmpdir/profile-instruction-home/.config/profiles/tool/codex/AGENTS.md" > /dev/null; \
+	grep -Fx 'Tool addendum' "$$tmpdir/profile-instruction-home/.config/profiles/tool/codex/AGENTS.md" > /dev/null; \
+	! grep -E 'All profile|Profile base|Profile addendum' "$$tmpdir/profile-instruction-home/.config/profiles/tool/codex/AGENTS.md" > /dev/null; \
+	grep -Fx 'All profile base' "$$tmpdir/profile-instruction-home/.config/profiles/empty_profile/codex/AGENTS.md" > /dev/null; \
+	grep -Fx 'All profile addendum' "$$tmpdir/profile-instruction-home/.config/profiles/empty_profile/codex/AGENTS.md" > /dev/null; \
+	grep -Fx 'Parent profile base' "$$tmpdir/profile-instruction-home/.config/profiles/empty_tool/codex/AGENTS.md" > /dev/null; \
+	grep -Fx 'All profile addendum' "$$tmpdir/profile-instruction-home/.config/profiles/empty_tool/codex/AGENTS.md" > /dev/null; \
+	grep -Fx 'Parent profile addendum' "$$tmpdir/profile-instruction-home/.config/profiles/empty_tool/codex/AGENTS.md" > /dev/null; \
+	mkdir -p "$$tmpdir/empty-profile-home/.codex"; \
+	printf '%s\n' 'Shared agent baseline' > "$$tmpdir/empty-profile-home/.codex/AGENTS.md"; \
+	"$(CHEZMOI)" --source "$$tmpdir/profile-instruction-source" --config "$$tmpdir/chezmoi.toml" --override-data '{"profiles":{"instructions":"","additionalInstructions":"","empty":{"tools":["codex"]}}}' execute-template --file "$$tmpdir/profile-instruction-source/home/.chezmoiscripts/setup.tmpl" > "$$tmpdir/empty-profile-setup.sh"; \
+	python3 -c 'import pathlib,sys; text=pathlib.Path(sys.argv[1]).read_text().replace("$$HOME", sys.argv[2]); pathlib.Path(sys.argv[3]).write_text(text)' "$$tmpdir/empty-profile-setup.sh" "$$tmpdir/empty-profile-home" "$$tmpdir/empty-profile-setup-isolated.sh"; \
+	! grep -F '/Users/sio' "$$tmpdir/empty-profile-setup-isolated.sh" > /dev/null; \
+	sh -n "$$tmpdir/empty-profile-setup-isolated.sh"; \
+	sh "$$tmpdir/empty-profile-setup-isolated.sh"; \
+	test -L "$$tmpdir/empty-profile-home/.config/profiles/empty/codex/AGENTS.md"; \
+	test "$$(readlink "$$tmpdir/empty-profile-home/.config/profiles/empty/codex/AGENTS.md")" = "$$tmpdir/empty-profile-home/.codex/AGENTS.md"; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '$(PROFILE_TEST_DATA)' cat ~/.config/zsh/aliases.zsh > "$$tmpdir/aliases"; \
 	grep -Fx "alias code='profile-use vscode Default'" "$$tmpdir/aliases" > /dev/null; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '{"profiles":null}' cat ~/.config/zsh/aliases.zsh > "$$tmpdir/aliases-no-profiles"; \
