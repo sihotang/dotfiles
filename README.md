@@ -187,20 +187,38 @@ defaultProfile = "work"
 
 Profiles can customize AI-agent instructions in the local `profiles.toml`:
 
+- `profiles.instructions` replaces shared AI instructions for all profiles by
+  default.
+- `profiles.additionalInstructions` appends to the selected base instructions
+  for all profiles by default.
 - `profiles.<id>.instructions` replaces the provider's shared instructions for
-  all AI tools enabled by that profile.
+  all AI tools enabled by that profile, and overrides `profiles.instructions`.
 - `profiles.<id>.additionalInstructions` appends to the active profile
-  instructions for all enabled AI tools in that profile.
+  instructions for all enabled AI tools in that profile, after the global
+  profile addendum.
 - `profiles.<id>.<tool>.instructions` replaces both shared and profile-level
   instructions for that tool.
 - `profiles.<id>.<tool>.additionalInstructions` appends to the selected
   instructions for that tool. When tool-specific `instructions` are set, the
-  tool addendum appends to those, and profile-level instructions are skipped.
+  tool addendum appends to those, and global/profile instructions and addenda
+  are skipped.
+- At every level, an empty string is treated as unset. The instruction value
+  inherits from its parent, and an empty addendum leaves the parent's addendum
+  in effect.
 
 For example, add `tools = ["codex"]` to each profile that should receive a
 Codex instruction file:
 
 ```toml
+[profiles]
+instructions = """
+For every profile, make small changes and explain validation.
+"""
+
+additionalInstructions = """
+For every profile, summarize relevant risks.
+"""
+
 [profiles.work]
 tools = ["codex", "claude", "gemini"]
 instructions = """
