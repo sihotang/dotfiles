@@ -5,16 +5,22 @@ charset = utf-8
 end_of_line = lf
 insert_final_newline = true
 indent_style = space
+indent_size = 2
 trim_trailing_whitespace = true
 
 # Chezmoi dotfiles in the home source tree.
 [home/dot_*]
 indent_style = space
-indent_size = 2
 
 # Match the indentation used by Git's config format in this repository.
 [home/dot_gitconfig]
 indent_size = 4
+
+# Makefiles require literal tabs for recipe lines.
+[Makefile]
+indent_style = tab
+indent_size = tab
+tab_width = 4
 
 [*.md]
 trim_trailing_whitespace = false
