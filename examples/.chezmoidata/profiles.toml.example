@@ -4,15 +4,13 @@ name = "Your Personal Name"
 email = "you@example.com"
 displayName = "Personal"
 tools = ["vscode", "gh", "git", "codex", "claude", "copilot", "gemini", "antigravity"]
+additionalInstructions = """
+For personal projects, explore alternatives before choosing an implementation.
+"""
 
 [profiles.personal.git]
 name = "Your Git Name"
 email = "another@example.com"
-
-[profiles.personal]
-additionalInstructions = """
-For personal projects, explore alternatives before choosing an implementation.
-"""
 
 [profiles.personal.codex]
 additionalInstructions = """

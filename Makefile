@@ -15,6 +15,17 @@ check:
 	tmpdir=$$(mktemp -d); \
 	trap 'rm -rf "$$tmpdir"' EXIT; \
 	touch "$$tmpdir/chezmoi.toml"; \
+	mkdir -p "$$tmpdir/data-bootstrap-source/scripts" "$$tmpdir/data-bootstrap-source/examples/.chezmoidata"; \
+	cp scripts/copy-example-data.sh "$$tmpdir/data-bootstrap-source/scripts/"; \
+	cp examples/.chezmoidata/*.example "$$tmpdir/data-bootstrap-source/examples/.chezmoidata/"; \
+	sh "$$tmpdir/data-bootstrap-source/scripts/copy-example-data.sh" "$$tmpdir/data-bootstrap-source" > /dev/null; \
+	cmp -s examples/.chezmoidata/ai.toml.example "$$tmpdir/data-bootstrap-source/home/.chezmoidata/ai.toml"; \
+	cmp -s examples/.chezmoidata/profiles.toml.example "$$tmpdir/data-bootstrap-source/home/.chezmoidata/profiles.toml"; \
+	python3 -c 'import sys,tomllib; assert isinstance(tomllib.load(open(sys.argv[1], "rb"))["ai"]["instructions"], str)' "$$tmpdir/data-bootstrap-source/home/.chezmoidata/ai.toml"; \
+	python3 -c 'import sys,tomllib; assert "profiles" in tomllib.load(open(sys.argv[1], "rb"))' "$$tmpdir/data-bootstrap-source/home/.chezmoidata/profiles.toml"; \
+	printf '%s\n' 'Keep existing local data' > "$$tmpdir/data-bootstrap-source/home/.chezmoidata/ai.toml"; \
+	sh "$$tmpdir/data-bootstrap-source/scripts/copy-example-data.sh" "$$tmpdir/data-bootstrap-source" > /dev/null; \
+	grep -Fx 'Keep existing local data' "$$tmpdir/data-bootstrap-source/home/.chezmoidata/ai.toml" > /dev/null; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '$(PROFILE_TEST_DATA)' cat ~/.config/zsh/aliases.zsh > "$$tmpdir/aliases"; \
 	grep -Fx "alias code='profile-use vscode Default'" "$$tmpdir/aliases" > /dev/null; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '{"profiles":null}' cat ~/.config/zsh/aliases.zsh > "$$tmpdir/aliases-no-profiles"; \
@@ -57,7 +68,7 @@ check:
 	for file in home/dot_zprofile home/dot_zshrc "$$tmpdir/aliases" "$$tmpdir/aliases-no-profiles" "$$tmpdir/exports" "$$tmpdir/functions" "$$tmpdir/functions-no-profiles" "$$tmpdir/integrations" "$$tmpdir/integrations-no-profiles"; do \
 	  zsh -n "$$file"; \
 	done; \
-	sh -n "$$tmpdir/setup-profiles.sh" "$$tmpdir/setup-profiles-empty.sh" home/.chezmoiscripts/run_after_lint-zsh.sh; \
+	sh -n "$$tmpdir/setup-profiles.sh" "$$tmpdir/setup-profiles-empty.sh" home/.chezmoiscripts/run_after_lint-zsh.sh setup.sh scripts/copy-example-data.sh; \
 	grep -Fx '#!/bin/sh' "$$tmpdir/setup-profiles-empty.sh" > /dev/null; \
 	python3 -m json.tool "$$tmpdir/gemini-settings.json" > /dev/null; \
 	GIT_CONFIG_COUNT=2 GIT_CONFIG_KEY_0=credential.helper GIT_CONFIG_VALUE_0= GIT_CONFIG_KEY_1=credential.helper GIT_CONFIG_VALUE_1='!gh auth git-credential' git config --get-all credential.helper | grep -Fx '!gh auth git-credential' > /dev/null; \

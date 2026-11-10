@@ -19,18 +19,33 @@ powershell -NoProfile -Command "Invoke-Expression (Invoke-RestMethod 'https://ra
 ```
 
 Each script installs chezmoi to a user-local directory if needed, initializes
-this repository, previews the changes, and asks before applying them. Git is
-required. On macOS, the shell script uses Homebrew when available and otherwise
-installs chezmoi to `~/.local/bin`; it also requires `curl` for the fallback.
-The PowerShell script uses PowerShell's web request support. The managed shell
-configuration is for Zsh; on Windows, use WSL if you want to use that shell
-configuration.
+this repository, copies missing machine-local data files from
+`examples/.chezmoidata/`, previews the changes, and asks before applying them.
+Existing local data files are preserved. Git is required. On macOS, the shell
+script uses Homebrew when available and otherwise installs chezmoi to
+`~/.local/bin`; it also requires `curl` for the fallback. The PowerShell script
+uses PowerShell's web request support. The managed shell configuration is for
+Zsh; on Windows, use WSL if you want to use that shell configuration.
 
 If chezmoi is already installed and you prefer to manage the steps yourself,
 initialize the repository directly:
 
 ```sh
 chezmoi init soparsio/dotfiles
+```
+
+Before previewing or applying, copy the missing machine-local data examples:
+
+```sh
+source_dir=$(chezmoi source-path)
+sh "$source_dir/scripts/copy-example-data.sh" "$source_dir"
+```
+
+In PowerShell, run:
+
+```powershell
+$sourceDir = chezmoi source-path
+& "$sourceDir/scripts/copy-example-data.ps1" -SourceDir $sourceDir
 ```
 
 On macOS, `chezmoi apply` installs the Homebrew packages listed in
