@@ -86,6 +86,11 @@ check:
 	! grep -F 'ai-profile-enabled' "$$tmpdir/functions" > /dev/null; \
 	! grep -F 'ai-use() {' "$$tmpdir/functions" > /dev/null; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '$(PROFILE_TEST_DATA)' execute-template --file home/.chezmoiscripts/run_onchange_setup-profiles.sh.tmpl > "$$tmpdir/setup-profiles.sh"; \
+	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" execute-template --file home/.chezmoiscripts/darwin/run_onchange_before_install-packages.sh.tmpl > "$$tmpdir/darwin-packages.sh"; \
+	if [ -s "$$tmpdir/darwin-packages.sh" ]; then \
+	  sh -n "$$tmpdir/darwin-packages.sh"; \
+	  grep -Fx 'brew cleanup --prune=all' "$$tmpdir/darwin-packages.sh" > /dev/null; \
+	fi; \
 	grep -F '/.config/profiles"' "$$tmpdir/setup-profiles.sh" > /dev/null; \
 	! grep -F 'code --profile' "$$tmpdir/setup-profiles.sh" > /dev/null; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '{"profiles":null}' execute-template --file home/.chezmoiscripts/run_onchange_setup-profiles.sh.tmpl > "$$tmpdir/setup-profiles-empty.sh"; \
