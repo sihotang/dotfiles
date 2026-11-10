@@ -2,4 +2,4 @@
 description: Personal coding and collaboration preferences
 alwaysApply: true
 ---
-{{ template "ai/personal-instructions.md" (dict "title" "Cursor") }}
+{{ template "ai/instructions.md" (dict "instructions" (.ai.instructions | default "") "title" "Cursor") }}

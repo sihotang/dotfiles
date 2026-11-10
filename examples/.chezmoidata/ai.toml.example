@@ -1,5 +1,6 @@
-# Personal {{ .title }} instructions
-
+# Machine-local AI agent instructions. Customize this text for this machine.
+[ai]
+instructions = '''
 ## Work with the repository
 
 - Follow the system, developer, user, and repository instructions that apply to the task. Check the nearest `AGENTS.md` and other relevant project guidance before changing files.
@@ -29,3 +30,4 @@
 
 - Run relevant checks required by the repository or requested by the user. Do not add tests or run unrelated checks unless asked. If a check cannot run or fails, report that accurately.
 - In the final summary, state what changed and why, identify important files, list the checks actually run, and mention material limitations. Never claim a change or check succeeded without verifying it.
+'''

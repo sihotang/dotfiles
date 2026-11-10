@@ -140,9 +140,17 @@ Git settings live under `home/dot_config/git/` and are included by the managed
 ## Profiles for CLI tools and app integrations
 
 Configure profiles in the machine-local, Git-ignored
-`home/.chezmoidata/profiles.toml` file. Create the `.chezmoidata`
-directory under the source root (`home/` in this repo), then copy
+`home/.chezmoidata/profiles.toml` file. Create the `.chezmoidata` directory
+under the source root (`home/` in this repo), then copy
 `examples/.chezmoidata/profiles.toml.example` as a starting point.
+
+Shared AI-agent instructions are machine-local too. Copy
+`examples/.chezmoidata/ai.toml.example` to `home/.chezmoidata/ai.toml` on each
+machine, then customize `ai.instructions` for that machine. The local
+`.chezmoidata` directory is ignored by Git. Provider templates supply a title
+such as `Codex` or `Claude Code` to the shared renderer. Create the local file
+before running `chezmoi apply` on a fresh machine so instructions are available
+to templates.
 
 Each profile is an object with optional `name`, `email`, `displayName`, and a
 `tools` array. `name` and `email` are the profile-level Git identity fallback.
@@ -161,6 +169,52 @@ omitted. For example, the machine-local config can contain:
 [data]
 defaultProfile = "work"
 ```
+
+Profiles can customize AI-agent instructions in the local `profiles.toml`:
+
+- `profiles.<id>.instructions` replaces the provider's shared instructions for
+  all AI tools enabled by that profile.
+- `profiles.<id>.additionalInstructions` appends to the active profile
+  instructions for all enabled AI tools in that profile.
+- `profiles.<id>.<tool>.instructions` replaces both shared and profile-level
+  instructions for that tool.
+- `profiles.<id>.<tool>.additionalInstructions` appends to the selected
+  instructions for that tool. When tool-specific `instructions` are set, the
+  tool addendum appends to those, and profile-level instructions are skipped.
+
+For example, add `tools = ["codex"]` to each profile that should receive a
+Codex instruction file:
+
+```toml
+[profiles.work]
+tools = ["codex", "claude", "gemini"]
+instructions = """
+For work projects, prefer small changes and do not change public APIs without confirmation.
+"""
+
+additionalInstructions = """
+For work sessions, summarize API compatibility risks before editing.
+"""
+
+[profiles.personal]
+tools = ["codex"]
+
+additionalInstructions = """
+For personal projects, explore alternatives before choosing an implementation.
+"""
+
+[profiles.personal.codex]
+additionalInstructions = """
+Keep personal-project explanations concise and include meaningful tradeoffs.
+"""
+```
+
+When a profile or tool override/addendum is configured, the setup script writes
+a generated instruction file into that profile's tool directory. Edit the
+local `profiles.toml` value to change it. With no custom instructions, profile
+directories continue to symlink the shared provider file. Existing custom
+instruction files in profile directories are preserved and reported instead of
+being overwritten.
 
 Git identity follows `profiles.<id>.git.name/email`, then the profile-level
 `name/email` field independently, then Git's global configuration. A `git`
