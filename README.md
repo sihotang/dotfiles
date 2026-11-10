@@ -34,7 +34,9 @@ initialize the repository directly:
 chezmoi init soparsio/dotfiles
 ```
 
-Before previewing or applying, copy the missing machine-local data examples:
+`chezmoi init` does not copy the examples. Do not add `--apply` to this command,
+because it applies before the local data files are created. After init, copy the
+missing machine-local data examples before previewing or applying:
 
 ```sh
 source_dir=$(chezmoi source-path)
