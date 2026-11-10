@@ -265,7 +265,7 @@ profile-use() {
     )
     return $?
   fi
-  profile_dir="$HOME/{{ $profilesDir }}/$profile/$profile_tool"
+  profile_dir="$HOME/{{ $profilesDir }}/$profile/$tool"
   if [[ ! -d "$profile_dir" ]]; then
     print -u2 "profile-use: profile not found: $tool/$profile"
     return 1

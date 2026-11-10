@@ -72,6 +72,12 @@ check:
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" cat ~/.config/zsh/exports.zsh > "$$tmpdir/exports"; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '$(PROFILE_TEST_DATA)' cat ~/.config/zsh/functions.zsh > "$$tmpdir/functions"; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '{"profiles":null}' cat ~/.config/zsh/functions.zsh > "$$tmpdir/functions-no-profiles"; \
+	mkdir -p "$$tmpdir/profile-gh-home/.config/profiles/review/gh" "$$tmpdir/profile-gh-bin"; \
+	printf '%s\n' '#!/bin/sh' 'printf "%s\n" "$${GH_TOKEN-}"' 'printf "%s\n" "$${GH_CONFIG_DIR-}"' > "$$tmpdir/profile-gh-bin/gh"; \
+	chmod +x "$$tmpdir/profile-gh-bin/gh"; \
+	PATH="$$tmpdir/profile-gh-bin:$$PATH" HOME="$$tmpdir/profile-gh-home" GH_TOKEN=shared-token zsh -c 'source "$$1"; profile-use gh review' _ "$$tmpdir/functions" > "$$tmpdir/profile-gh-auth"; \
+	test -z "$$(sed -n '1p' "$$tmpdir/profile-gh-auth")"; \
+	grep -Fx "$$tmpdir/profile-gh-home/.config/profiles/review/gh" "$$tmpdir/profile-gh-auth" > /dev/null; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" cat ~/.config/zsh/integrations.zsh > "$$tmpdir/integrations"; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '{"profiles":null}' cat ~/.config/zsh/integrations.zsh > "$$tmpdir/integrations-no-profiles"; \
 	grep -F 'vscode_profile="Review Profile"' "$$tmpdir/functions" > /dev/null; \
