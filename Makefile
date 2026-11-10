@@ -2,7 +2,7 @@
 
 CHEZMOI ?= chezmoi
 CHEZMOI_SOURCE ?= $(CURDIR)
-PROFILE_TEST_DATA := {"defaultProfile":"Default","profiles":{"default":{"tools":["codex","vscode"],"displayName":"Default"},"review":{"tools":["codex","gh","vscode"],"displayName":"Review Profile"}}}
+PROFILE_TEST_DATA := {"defaultProfile":"Default","profiles":{"default":{"tools":["codex","vscode"],"displayName":"Default"},"review":{"tools":["codex","gh","git","vscode"],"displayName":"Review Profile","name":"Profile User","email":"profile@example.test","git":{"name":"Review User","email":"review@example.test"}}}}
 ASSISTANT_CONFIGS := \
 	.agents/hooks.json \
 	.claude/settings.json \
@@ -32,6 +32,9 @@ check:
 	grep -F 'vscode_profile="Review Profile"' "$$tmpdir/integrations" > /dev/null; \
 	grep -F 'CODEX_HOME=$$HOME/.config/profiles/review/codex' "$$tmpdir/integrations" > /dev/null; \
 	! grep -F 'CODEX_HOME=$$HOME/.config/profiles/default/codex' "$$tmpdir/integrations" > /dev/null; \
+	grep -F 'export GIT_CONFIG_KEY_3=user.email' "$$tmpdir/integrations" > /dev/null; \
+	grep -F "export GIT_CONFIG_VALUE_2='Review User'" "$$tmpdir/integrations" > /dev/null; \
+	grep -F "export GIT_CONFIG_VALUE_3='review@example.test'" "$$tmpdir/integrations" > /dev/null; \
 	grep -F 'unset CODEX_HOME' "$$tmpdir/integrations" > /dev/null; \
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '$(PROFILE_TEST_DATA)' execute-template --file home/.chezmoiscripts/run_onchange_setup-profiles.sh.tmpl > "$$tmpdir/setup-profiles.sh"; \
 	grep -F '/.config/profiles"' "$$tmpdir/setup-profiles.sh" > /dev/null; \
@@ -48,7 +51,7 @@ check:
 	for file in home/dot_zprofile home/dot_zshrc home/dot_config/zsh/functions.zsh "$$tmpdir/aliases" "$$tmpdir/aliases-no-profiles" "$$tmpdir/exports" "$$tmpdir/integrations" "$$tmpdir/integrations-no-profiles"; do \
 	  zsh -n "$$file"; \
 	done; \
-	sh -n "$$tmpdir/setup-profiles.sh" "$$tmpdir/setup-profiles-empty.sh"; \
+	sh -n "$$tmpdir/setup-profiles.sh" "$$tmpdir/setup-profiles-empty.sh" home/.chezmoiscripts/run_after_lint-zsh.sh; \
 	grep -Fx '#!/bin/sh' "$$tmpdir/setup-profiles-empty.sh" > /dev/null; \
 	python3 -m json.tool "$$tmpdir/gemini-settings.json" > /dev/null; \
 	GIT_CONFIG_COUNT=2 GIT_CONFIG_KEY_0=credential.helper GIT_CONFIG_VALUE_0= GIT_CONFIG_KEY_1=credential.helper GIT_CONFIG_VALUE_1='!gh auth git-credential' git config --get-all credential.helper | grep -Fx '!gh auth git-credential' > /dev/null; \
