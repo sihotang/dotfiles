@@ -9,13 +9,13 @@ uses Zsh.
 On macOS, Linux, or WSL, run the POSIX shell setup script directly from GitHub:
 
 ```sh
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/soparsio/dotfiles/main/setup.sh)"
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/soparsio/dotfiles/main/install.sh)"
 ```
 
 On native Windows, run the PowerShell setup script:
 
 ```powershell
-powershell -NoProfile -Command "Invoke-Expression (Invoke-RestMethod 'https://raw.githubusercontent.com/soparsio/dotfiles/main/setup.ps1')"
+powershell -NoProfile -Command "Invoke-Expression (Invoke-RestMethod 'https://raw.githubusercontent.com/soparsio/dotfiles/main/install.ps1')"
 ```
 
 Each script installs chezmoi to a user-local directory if needed, initializes
@@ -63,10 +63,10 @@ chezmoi apply
 ```
 
 To run the scripts from a local clone, change to its root directory and run
-`./setup.sh` on macOS, Linux, or WSL. On Windows, run:
+`./install.sh` on macOS, Linux, or WSL. On Windows, run:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
 The scripts use that checkout as the chezmoi source.
@@ -103,7 +103,7 @@ chezmoi --source "$PWD" diff
 chezmoi --source "$PWD" apply
 ```
 
-Review the diff before applying. You can also rerun `./setup.sh` to preview and
+Review the diff before applying. You can also rerun `./install.sh` to preview and
 confirm an apply. Edit source files under `home/`; destination files in your
 home directory are managed outputs.
 

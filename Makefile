@@ -68,7 +68,7 @@ check:
 	for file in home/dot_zprofile home/dot_zshrc "$$tmpdir/aliases" "$$tmpdir/aliases-no-profiles" "$$tmpdir/exports" "$$tmpdir/functions" "$$tmpdir/functions-no-profiles" "$$tmpdir/integrations" "$$tmpdir/integrations-no-profiles"; do \
 	  zsh -n "$$file"; \
 	done; \
-	sh -n "$$tmpdir/setup-profiles.sh" "$$tmpdir/setup-profiles-empty.sh" home/.chezmoiscripts/run_after_lint-zsh.sh setup.sh scripts/copy-example-data.sh; \
+	sh -n "$$tmpdir/setup-profiles.sh" "$$tmpdir/setup-profiles-empty.sh" home/.chezmoiscripts/run_after_lint-zsh.sh install.sh scripts/copy-example-data.sh; \
 	grep -Fx '#!/bin/sh' "$$tmpdir/setup-profiles-empty.sh" > /dev/null; \
 	python3 -m json.tool "$$tmpdir/gemini-settings.json" > /dev/null; \
 	GIT_CONFIG_COUNT=2 GIT_CONFIG_KEY_0=credential.helper GIT_CONFIG_VALUE_0= GIT_CONFIG_KEY_1=credential.helper GIT_CONFIG_VALUE_1='!gh auth git-credential' git config --get-all credential.helper | grep -Fx '!gh auth git-credential' > /dev/null; \

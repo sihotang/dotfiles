@@ -5,7 +5,7 @@ set -eu
 platform=$(uname -s)
 case "$platform" in
   MINGW*|MSYS*|CYGWIN*)
-    printf '%s\n' 'Run setup.ps1 from PowerShell for native Windows.' >&2
+    printf '%s\n' 'Run install.ps1 from PowerShell for native Windows.' >&2
     exit 1
     ;;
 esac
@@ -17,7 +17,7 @@ if ! command -v chezmoi >/dev/null 2>&1; then
     brew install chezmoi
   else
     if ! command -v curl >/dev/null 2>&1; then
-      printf '%s\n' 'curl is required to install chezmoi. Install curl and run setup.sh again.' >&2
+      printf '%s\n' 'curl is required to install chezmoi. Install curl and run install.sh again.' >&2
       exit 1
     fi
 
