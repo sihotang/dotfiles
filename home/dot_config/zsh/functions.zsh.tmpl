@@ -158,6 +158,10 @@ profile-git-config() {
   esac
 }
 
+profile-clear-environment() {
+  unset CODEX_HOME CLAUDE_CONFIG_DIR COPILOT_HOME GEMINI_CLI_HOME GH_CONFIG_DIR
+}
+
 # profile-use TOOL PROFILE [arguments...] starts a CLI with an isolated state directory.
 profile-use() {
   if (( $# < 2 )); then
@@ -171,18 +175,14 @@ profile-use() {
     claude) env_name=CLAUDE_CONFIG_DIR; cli=claude ;;
     copilot) env_name=COPILOT_HOME; cli=copilot ;;
     gemini) env_name=GEMINI_CLI_HOME; cli=gemini ;;
-    gh) env_name=GH_CONFIG_DIR; cli=gh ;;
-    git) env_name=GH_CONFIG_DIR; cli=git ;;
-    vscode) cli=code ;;
+    gh|git|vscode) ;;
     *) print -u2 'profile-use: TOOL must be codex, claude, copilot, gemini, gh, git, or vscode'; return 2 ;;
   esac
   if [[ ! "$profile" =~ '^[a-zA-Z0-9._-]+$' || "$profile" == '.' || "$profile" == '..' ]]; then
     print -u2 'profile-use: profile name may contain only letters, numbers, dot, underscore, and hyphen'
     return 2
   fi
-  local profile_tool="$tool"
-  [[ "$tool" == git ]] && profile_tool=git
-  if ! profile-enabled "$profile_tool" "$profile"; then
+  if ! profile-enabled "$tool" "$profile"; then
     if [[ "$tool" != vscode || "$profile" != Default ]]; then
       print -u2 "profile-use: profile is not configured for $tool: $profile"
       return 1
@@ -215,9 +215,7 @@ profile-use() {
 {{- end -}}
 {{- range $tool := $tools -}}
 {{- if eq $tool "codex" -}}
-{{- if ne $vscodeProfile "Default" -}}
 {{ printf "        profile_env+=(\"CODEX_HOME=$HOME/%s/%s/codex\")\n" $profilesDir $profile -}}
-{{- end -}}
 {{- else if eq $tool "claude" -}}
 {{ printf "        profile_env+=(\"CLAUDE_CONFIG_DIR=$HOME/%s/%s/claude\")\n" $profilesDir $profile -}}
 {{- else if eq $tool "copilot" -}}
@@ -240,7 +238,7 @@ profile-use() {
         unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN
         profile-git-config "$profile"
         if [[ "$vscode_profile" == "Default" ]]; then
-          unset CODEX_HOME
+          profile-clear-environment
         fi
         command env "${profile_env[@]}" code --profile "$vscode_profile" "$@"
       )
@@ -248,7 +246,7 @@ profile-use() {
     fi
     if [[ "$vscode_profile" == "Default" ]]; then
       (
-        unset CODEX_HOME
+        profile-clear-environment
         command env "${profile_env[@]}" code --profile "$vscode_profile" "$@"
       )
       return $?

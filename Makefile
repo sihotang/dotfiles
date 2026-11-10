@@ -33,11 +33,12 @@ check:
 	"$(CHEZMOI)" --source "$(CHEZMOI_SOURCE)" --config "$$tmpdir/chezmoi.toml" --override-data '{"profiles":null}' cat ~/.config/zsh/integrations.zsh > "$$tmpdir/integrations-no-profiles"; \
 	grep -F 'vscode_profile="Review Profile"' "$$tmpdir/functions" > /dev/null; \
 	grep -F 'CODEX_HOME=$$HOME/.config/profiles/review/codex' "$$tmpdir/functions" > /dev/null; \
-	! grep -F 'CODEX_HOME=$$HOME/.config/profiles/default/codex' "$$tmpdir/functions" > /dev/null; \
+	grep -F 'CODEX_HOME=$$HOME/.config/profiles/default/codex' "$$tmpdir/functions" > /dev/null; \
 	grep -F 'export GIT_CONFIG_KEY_3=user.email' "$$tmpdir/functions" > /dev/null; \
 	grep -F "export GIT_CONFIG_VALUE_2='Review User'" "$$tmpdir/functions" > /dev/null; \
 	grep -F "export GIT_CONFIG_VALUE_3='review@example.test'" "$$tmpdir/functions" > /dev/null; \
-	grep -F 'unset CODEX_HOME' "$$tmpdir/functions" > /dev/null; \
+	grep -F 'profile-clear-environment() {' "$$tmpdir/functions" > /dev/null; \
+	test "$$(grep -F -c 'profile-clear-environment' "$$tmpdir/functions")" -eq 3; \
 	grep -F 'profile-enabled() {' "$$tmpdir/functions" > /dev/null; \
 	! grep -F 'ai-profile-enabled' "$$tmpdir/functions" > /dev/null; \
 	! grep -F 'ai-use() {' "$$tmpdir/functions" > /dev/null; \
