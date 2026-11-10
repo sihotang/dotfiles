@@ -1,4 +1,4 @@
 ---
 name: Personal Continue instructions
 ---
-{{ template "ai/personal-instructions.md" (dict "title" "Continue") }}
+{{ template "ai/instructions.md" (dict "instructions" (.ai.instructions | default "") "title" "Continue") }}

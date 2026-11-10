@@ -1,1 +1,1 @@
-{{- template "ai/personal-instructions.md" (dict "title" "Claude Code") -}}
+{{- template "ai/instructions.md" (dict "instructions" (.ai.instructions | default "") "title" "Claude Code") -}}

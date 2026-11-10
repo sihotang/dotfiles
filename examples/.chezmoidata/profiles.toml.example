@@ -9,11 +9,29 @@ tools = ["vscode", "gh", "git", "codex", "claude", "copilot", "gemini", "antigra
 name = "Your Git Name"
 email = "another@example.com"
 
+[profiles.personal]
+additionalInstructions = """
+For personal projects, explore alternatives before choosing an implementation.
+"""
+
+[profiles.personal.codex]
+additionalInstructions = """
+Keep the personal-project instructions concise and explain meaningful tradeoffs.
+"""
+
 [profiles.work]
 name = "Your Work Name"
 email = "you@company.example"
 tools = ["codex", "gh", "vscode"]
 displayName = "Work"
+instructions = """
+For work projects, prefer small changes and do not change public APIs without confirmation.
+"""
+
+[profiles.work.codex]
+instructions = """
+For Codex in this profile, follow the work-specific Codex workflow documented here.
+"""
 
 [profiles.client]
 tools = ["codex", "gh", "vscode"]
