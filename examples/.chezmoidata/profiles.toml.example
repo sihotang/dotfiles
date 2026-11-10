@@ -3,9 +3,17 @@
 tools = ["codex", "claude", "copilot", "gemini", "gh", "antigravity", "vscode"]
 displayName = "Personal"
 
+[profiles.personal.git]
+name = "Your Personal Name"
+email = "you@example.com"
+
 [profiles.work]
 tools = ["codex", "gh", "vscode"]
 displayName = "Work"
+
+[profiles.work.git]
+name = "Your Work Name"
+email = "you@company.example"
 
 [profiles.client]
 tools = ["codex", "gh", "vscode"]

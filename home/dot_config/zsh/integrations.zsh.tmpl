@@ -18,6 +18,16 @@ command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
 {{ range $tool := $tools -}}
 {{ if not (or (eq $tool "codex") (eq $tool "claude") (eq $tool "copilot") (eq $tool "gemini") (eq $tool "gh") (eq $tool "vscode") (eq $tool "antigravity")) }}{{ fail (printf "unsupported profile tool %q in profile %q" $tool $profile) }}{{ end }}
 {{ end -}}
+{{ if not (kindIs "slice" $config) -}}
+{{ $gitConfig := index $config "git" | default dict }}
+{{ if not (kindIs "map" $gitConfig) }}{{ fail (printf "git config for profile %q must be a table" $profile) }}{{ end }}
+{{ $gitName := index $gitConfig "name" | default "" }}
+{{ $gitEmail := index $gitConfig "email" | default "" }}
+{{ if or $gitName $gitEmail }}
+{{ if or (not $gitName) (not $gitEmail) }}{{ fail (printf "git config for profile %q must define both name and email" $profile) }}{{ end }}
+{{ if not (has "gh" $tools) }}{{ fail (printf "git identity for profile %q requires gh in tools" $profile) }}{{ end }}
+{{ end }}
+{{ end -}}
 {{ end -}}
 
 ai-profile-enabled() {
@@ -33,13 +43,39 @@ ai-profile-enabled() {
   esac
 }
 
+# Set the GitHub credential helper and optional profile-specific author identity.
+profile-git-config() {
+  local profile="$1" git_helper_prefix
+  git_helper_prefix=$(printf '\041')
+  export GIT_CONFIG_KEY_0=credential.helper
+  export GIT_CONFIG_VALUE_0=
+  export GIT_CONFIG_KEY_1=credential.helper
+  export GIT_CONFIG_VALUE_1="${git_helper_prefix}gh auth git-credential"
+  case "$profile" in
+{{ range $profile, $config := $profiles -}}
+{{ $gitConfig := dict }}
+{{ if not (kindIs "slice" $config) }}{{ $gitConfig = index $config "git" | default dict }}{{ end }}
+{{ if and (index $gitConfig "name") (index $gitConfig "email") -}}
+    "{{ $profile }}")
+      export GIT_CONFIG_COUNT=4
+      export GIT_CONFIG_KEY_2=user.name
+      export GIT_CONFIG_VALUE_2={{ printf "'%s'" (replace "'" "'\\''" (index $gitConfig "name")) }}
+      export GIT_CONFIG_KEY_3=user.email
+      export GIT_CONFIG_VALUE_3={{ printf "'%s'" (replace "'" "'\\''" (index $gitConfig "email")) }}
+      ;;
+{{ end -}}
+{{ end -}}
+    *) export GIT_CONFIG_COUNT=2 ;;
+  esac
+}
+
 # profile-use TOOL PROFILE [arguments...] starts a CLI with an isolated state directory.
 profile-use() {
   if (( $# < 2 )); then
     print -u2 'Usage: profile-use TOOL PROFILE [arguments...]'
     return 2
   fi
-  local tool="$1" profile="$2" profile_dir env_name cli gh_profile_enabled=0 git_helper_prefix
+  local tool="$1" profile="$2" profile_dir env_name cli gh_profile_enabled=0
   local -a profile_env
   case "$tool" in
     codex) env_name=CODEX_HOME; cli=codex ;;
@@ -89,8 +125,6 @@ profile-use() {
 {{ else if eq $tool "gemini" }}        profile_env+=("GEMINI_CLI_HOME=$HOME/{{ $profilesDir }}/{{ $profile }}/gemini")
 {{ else if eq $tool "gh" }}        gh_profile_enabled=1
         profile_env+=("GH_CONFIG_DIR=$HOME/{{ $profilesDir }}/{{ $profile }}/gh")
-        git_helper_prefix=$(printf '\041')
-        profile_env+=("GIT_CONFIG_COUNT=2" "GIT_CONFIG_KEY_0=credential.helper" "GIT_CONFIG_VALUE_0=" "GIT_CONFIG_KEY_1=credential.helper" "GIT_CONFIG_VALUE_1=${git_helper_prefix}gh auth git-credential")
 {{ end -}}
 {{ end -}}
         ;;
@@ -102,6 +136,7 @@ profile-use() {
     if (( gh_profile_enabled )); then
       (
         unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN
+        profile-git-config "$profile"
         if [[ "$vscode_profile" == "Default" ]]; then
           unset CODEX_HOME
         fi
@@ -133,15 +168,10 @@ profile-use() {
     return $?
   fi
   if [[ "$tool" == git ]]; then
-    git_helper_prefix=$(printf '\041')
     (
       unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN
       export GH_CONFIG_DIR="$profile_dir"
-      export GIT_CONFIG_COUNT=2
-      export GIT_CONFIG_KEY_0=credential.helper
-      export GIT_CONFIG_VALUE_0=
-      export GIT_CONFIG_KEY_1=credential.helper
-      export GIT_CONFIG_VALUE_1="${git_helper_prefix}gh auth git-credential"
+      profile-git-config "$profile"
       command git "$@"
     )
     return $?

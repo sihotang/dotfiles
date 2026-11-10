@@ -130,15 +130,15 @@ Machine-specific extension paths and temporary agent instruction paths are
 kept out of the shared settings.
 
 Git settings live under `home/dot_config/git/` and are included by the managed
-`~/.gitconfig`. Machine-specific Git settings belong in `~/.gitconfig.local`;
-keep that file local and out of this repository.
+`~/.gitconfig`. Machine-specific global Git settings belong in
+`~/.gitconfig.local`; keep that file local and out of this repository.
 
 ## Profiles for CLI tools and app integrations
 
 Configure profiles in the machine-local, Git-ignored
 `home/.chezmoidata/profiles.toml` file. Create the `.chezmoidata`
 directory under the source root (`home/` in this repo), then copy
-`examples/profiles.toml.example` as a starting point.
+`examples/.chezmoidata/profiles.toml.example` as a starting point.
 
 Each profile is an object with a `tools` array and optional `displayName`.
 Profile IDs remain the stable names used by launchers and CLI directories.
@@ -156,6 +156,25 @@ omitted. For example, the machine-local config can contain:
 [data]
 defaultProfile = "work"
 ```
+
+For a separate Git commit identity, add a `git` table to each profile that
+enables `gh` and needs one:
+
+```toml
+[profiles.personal.git]
+name = "Your Personal Name"
+email = "you@example.com"
+
+[profiles.work.git]
+name = "Your Work Name"
+email = "you@company.example"
+```
+
+Keep real names and email addresses in the ignored local `profiles.toml` file.
+The `git-<profile>` launcher uses that profile's identity and GitHub CLI
+credentials. The matching `code-<profile>` integrated terminal also uses the
+identity when the profile enables `gh`. Profiles without a `git` table keep the
+global identity from `~/.gitconfig.local`.
 
 Then `code-sio-shared` opens the VS Code profile named `Sio Shared`.
 `dotfiles` opens this chezmoi source directory in the built-in Default Profile,
