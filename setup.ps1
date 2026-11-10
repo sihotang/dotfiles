@@ -20,10 +20,16 @@ if ($chezmoiCommand) {
 $sourceArgs = @()
 if (Test-Path (Join-Path $scriptDir '.chezmoiroot')) {
     $sourceArgs = @('--source', $scriptDir)
+    $sourceDir = $scriptDir
 } else {
     & $chezmoiPath init 'soparsio/dotfiles'
     if ($LASTEXITCODE -ne 0) { throw 'chezmoi init failed' }
+    $sourceDir = (& $chezmoiPath source-path).Trim()
+    if ($LASTEXITCODE -ne 0) { throw 'chezmoi source-path failed' }
 }
+
+$dataBootstrap = Join-Path $sourceDir 'scripts/copy-example-data.ps1'
+& $dataBootstrap -SourceDir $sourceDir
 
 Write-Host 'Previewing dotfile changes:'
 & $chezmoiPath @sourceArgs diff

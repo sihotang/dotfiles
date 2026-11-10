@@ -32,9 +32,13 @@ fi
 if [ ! -f "$script_dir/.chezmoiroot" ]; then
   chezmoi init soparsio/dotfiles
   use_local_source=false
+  source_dir=$(chezmoi source-path)
 else
   use_local_source=true
+  source_dir=$script_dir
 fi
+
+"$source_dir/scripts/copy-example-data.sh" "$source_dir"
 
 printf '%s\n' 'Previewing dotfile changes:'
 if [ "$use_local_source" = true ]; then
