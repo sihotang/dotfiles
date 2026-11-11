@@ -4,8 +4,14 @@
 set -eu
 
 usage() {
-  printf 'Usage: %s [template-path]\n' "${0##*/}" >&2
+  printf 'Usage: %s [--fix] [template-path]\n' "${0##*/}" >&2
 }
+
+fix=0
+if [ "${1:-}" = --fix ]; then
+  fix=1
+  shift
+fi
 
 case ${1:-} in
   -h|--help)
@@ -21,26 +27,80 @@ fi
 
 CHEZMOI=${CHEZMOI:-chezmoi}
 CHEZMOI_SOURCE=${CHEZMOI_SOURCE:-$PWD}
-template=${1:-home/.chezmoiscripts/run_onchange_setup-profiles.sh.tmpl}
-syntax_checker=sh
+if ! command -v "$CHEZMOI" >/dev/null 2>&1; then
+  if command -v chezmoi >/dev/null 2>&1; then
+    CHEZMOI=chezmoi
+  else
+    printf 'Chezmoi executable not found: %s\n' "$CHEZMOI" >&2
+    exit 127
+  fi
+fi
 
-case $template in
-  /*) ;;
-  *) template="$CHEZMOI_SOURCE/$template" ;;
-esac
-
-case $template in
-  *.zsh.tmpl) syntax_checker=${ZSH:-zsh} ;;
-esac
-
-if [ ! -f "$template" ]; then
-  printf 'Template not found: %s\n' "$template" >&2
-  exit 1
+if [ "$#" -eq 1 ]; then
+  selected_path=$1
+  case $selected_path in
+    /*) ;;
+    *) selected_path="$CHEZMOI_SOURCE/$selected_path" ;;
+  esac
+  if [ -d "$selected_path" ]; then
+    templates=$(find "$selected_path" -type f \( -name '*.sh.tmpl' -o -name '*.zsh.tmpl' \) -print)
+    if [ -z "$templates" ]; then
+      printf 'No shell templates found under %s\n' "$selected_path" >&2
+      exit 1
+    fi
+  elif [ -f "$selected_path" ]; then
+    templates=$selected_path
+  else
+    printf 'Template path not found: %s\n' "$selected_path" >&2
+    exit 1
+  fi
+else
+  templates=$(find "$CHEZMOI_SOURCE/home" -type f \( -name '*.sh.tmpl' -o -name '*.zsh.tmpl' \) -print)
+  if [ -z "$templates" ]; then
+    printf 'No shell templates found under %s/home\n' "$CHEZMOI_SOURCE" >&2
+    exit 1
+  fi
 fi
 
 tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT HUP INT TERM
 touch "$tmpdir/chezmoi.toml"
+
+normalize_whitespace() {
+  python3 - "$1" <<'PY'
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+original = path.read_bytes()
+if b"\r\n" in original:
+    newline = "\r\n"
+elif b"\r" in original and b"\n" not in original:
+    newline = "\r"
+else:
+    newline = "\n"
+text = original.decode("utf-8")
+lines = text.splitlines()
+normalized = newline.join(line.rstrip(" \t") for line in lines)
+if original.endswith((b"\n", b"\r")):
+    normalized += newline
+if normalized.encode("utf-8") != original:
+    path.write_bytes(normalized.encode("utf-8"))
+    print(f"Normalized whitespace: {path}")
+PY
+}
+
+format_template() {
+  template_path=$1
+  rendered_path=$2
+  shell_dialect=$3
+  "$CHEZMOI" \
+    --source "$CHEZMOI_SOURCE" \
+    --config "$tmpdir/chezmoi.toml" \
+    --override-data '{"profiles":{"lint":{"tools":["codex","gh","git","vscode"]}}}' \
+    execute-template --file "$template_path" > "$rendered_path"
+  shfmt -w -ln "$shell_dialect" "$rendered_path"
+}
 
 check_whitespace() {
   python3 - "$1" "$2" <<'PY'
@@ -63,15 +123,43 @@ if errors:
 PY
 }
 
-check_whitespace "$template" "$template"
+printf '%s\n' "$templates" | while IFS= read -r template; do
+  case $template in
+    /*) ;;
+    *) template="$CHEZMOI_SOURCE/$template" ;;
+  esac
 
-"$CHEZMOI" \
-  --source "$CHEZMOI_SOURCE" \
-  --config "$tmpdir/chezmoi.toml" \
-  --override-data '{"profiles":{"lint":{"tools":["codex","gh","git","vscode"]}}}' \
-  execute-template --file "$template" > "$tmpdir/rendered.sh"
+  if [ ! -f "$template" ]; then
+    printf 'Template not found: %s\n' "$template" >&2
+    exit 1
+  fi
 
-check_whitespace "$tmpdir/rendered.sh" "$template (rendered)"
-"$syntax_checker" -n "$tmpdir/rendered.sh"
+  syntax_checker=sh
+  case $template in
+    *.zsh.tmpl) syntax_checker=${ZSH:-zsh} ;;
+  esac
 
-printf 'Shell template lint passed: %s\n' "$template"
+  if [ "$fix" -eq 1 ] && [ "$#" -eq 1 ]; then
+    normalize_whitespace "$template"
+  fi
+  check_whitespace "$template" "$template"
+  if [ "$fix" -eq 1 ] && [ "$#" -eq 0 ]; then
+    continue
+  fi
+  if [ "$fix" -eq 1 ] && [ "$#" -eq 1 ]; then
+    shell_dialect=posix
+    case $template in
+      *.zsh.tmpl) shell_dialect=zsh ;;
+    esac
+    format_template "$template" "$tmpdir/rendered.sh" "$shell_dialect"
+  else
+    "$CHEZMOI" \
+      --source "$CHEZMOI_SOURCE" \
+      --config "$tmpdir/chezmoi.toml" \
+      --override-data '{"profiles":{"lint":{"tools":["codex","gh","git","vscode"]}}}' \
+      execute-template --file "$template" > "$tmpdir/rendered.sh"
+  fi
+  check_whitespace "$tmpdir/rendered.sh" "$template (rendered)"
+  "$syntax_checker" -n "$tmpdir/rendered.sh"
+  printf 'Shell template lint passed: %s\n' "$template"
+done
