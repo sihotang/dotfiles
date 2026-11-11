@@ -1,4 +1,4 @@
-.PHONY: check check-assistant-configs
+.PHONY: check check-assistant-configs lint-functions-template lint-setup-profiles-template
 
 CHEZMOI ?= chezmoi
 CHEZMOI_SOURCE ?= $(CURDIR)
@@ -11,6 +11,14 @@ ASSISTANT_CONFIGS := \
 
 check:
 	@CHEZMOI='$(CHEZMOI)' CHEZMOI_SOURCE='$(CHEZMOI_SOURCE)' sh scripts/check.sh
+	@CHEZMOI='$(CHEZMOI)' CHEZMOI_SOURCE='$(CHEZMOI_SOURCE)' sh scripts/lint-shell-template.sh
+	@CHEZMOI='$(CHEZMOI)' CHEZMOI_SOURCE='$(CHEZMOI_SOURCE)' sh scripts/lint-shell-template.sh home/dot_config/zsh/functions.zsh.tmpl
+
+lint-functions-template:
+	@CHEZMOI='$(CHEZMOI)' CHEZMOI_SOURCE='$(CHEZMOI_SOURCE)' sh scripts/lint-shell-template.sh home/dot_config/zsh/functions.zsh.tmpl
+
+lint-setup-profiles-template:
+	@CHEZMOI='$(CHEZMOI)' CHEZMOI_SOURCE='$(CHEZMOI_SOURCE)' sh scripts/lint-shell-template.sh
 
 check-assistant-configs:
 	@set -eu; \

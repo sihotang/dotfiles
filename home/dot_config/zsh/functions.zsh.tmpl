@@ -247,6 +247,21 @@ profile-use-cli() {
   local tool="$1" profile="$2" profile_dir env_name cli
   shift 2
 
+  profile_dir="$HOME/{{ $profilesDir }}/$profile/$tool"
+  if [[ ! -d "$profile_dir" ]]; then
+    print -u2 "profile-use: profile not found: $tool/$profile"
+    return 1
+  fi
+
+  if [[ "$tool" == gh ]]; then
+    (
+      profile-clear-gh-environment
+      export GH_CONFIG_DIR="$profile_dir"
+      command gh "$@"
+    )
+    return $?
+  fi
+
   case "$tool" in
     codex) env_name=CODEX_HOME; cli=codex ;;
     claude) env_name=CLAUDE_CONFIG_DIR; cli=claude ;;
@@ -254,20 +269,7 @@ profile-use-cli() {
     gemini) env_name=GEMINI_CLI_HOME; cli=gemini ;;
   esac
 
-  profile_dir="$HOME/{{ $profilesDir }}/$profile/$tool"
-  if [[ ! -d "$profile_dir" ]]; then
-    print -u2 "profile-use: profile not found: $tool/$profile"
-    return 1
-  fi
-  if [[ "$tool" == gh ]]; then
-    (
-      profile-clear-gh-environment
-      export GH_CONFIG_DIR="$profile_dir"
-      command gh "$@"
-    )
-  else
-    command env "$env_name=$profile_dir" "$cli" "$@"
-  fi
+  command env "$env_name=$profile_dir" "$cli" "$@"
 }
 
 # profile-use TOOL PROFILE [arguments...] starts a CLI with an isolated state directory.
