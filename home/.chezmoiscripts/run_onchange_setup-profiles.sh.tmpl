@@ -1,64 +1,85 @@
 #!/bin/sh
-{{- $profilesDir := (index . "profilesDir") | default ".config/profiles" }}
-{{- $profiles := (index . "profiles") | default dict }}
-{{- $globalProfileInstructions := index $profiles "instructions" | default "" }}
-{{- if and $globalProfileInstructions (not (kindIs "string" $globalProfileInstructions)) }}{{ fail "profiles.instructions must be a string" }}{{ end }}
-{{- $globalProfileAdditionalInstructions := index $profiles "additionalInstructions" | default "" }}
-{{- if and $globalProfileAdditionalInstructions (not (kindIs "string" $globalProfileAdditionalInstructions)) }}{{ fail "profiles.additionalInstructions must be a string" }}{{ end }}
+{{ $profilesDir := (index . "profilesDir") | default ".config/profiles" -}}
+{{- $profiles := (index . "profiles") | default dict -}}
+{{- $globalProfileInstructions := index $profiles "instructions" | default "" -}}
+{{- if and $globalProfileInstructions (not (kindIs "string" $globalProfileInstructions)) -}}
+  {{- fail "profiles.instructions must be a string" -}}
+{{- end -}}
+{{- $globalProfileAdditionalInstructions := index $profiles "additionalInstructions" | default "" -}}
+{{- if and $globalProfileAdditionalInstructions (not (kindIs "string" $globalProfileAdditionalInstructions)) -}}
+  {{- fail "profiles.additionalInstructions must be a string" -}}
+{{- end -}}
 {{- range $profile, $config := $profiles -}}
-{{ if not (or (eq $profile "instructions") (eq $profile "additionalInstructions")) -}}
-{{ if not (regexMatch "^[a-zA-Z0-9._-]+$" $profile) }}{{ fail (printf "invalid profile name %q" $profile) }}{{ end }}
-{{ $tools := $config }}
-{{ if not (kindIs "slice" $config) }}
-{{ $tools = index $config "tools" }}
-{{ $profileInstructions := index $config "instructions" }}
-{{ if and $profileInstructions (not (kindIs "string" $profileInstructions)) }}{{ fail (printf "profile %q field %q must be a string" $profile "instructions") }}{{ end }}
-{{ $profileAdditionalInstructions := index $config "additionalInstructions" }}
-{{ if and $profileAdditionalInstructions (not (kindIs "string" $profileAdditionalInstructions)) }}{{ fail (printf "profile %q field %q must be a string" $profile "additionalInstructions") }}{{ end }}
-{{ range $tool := list "codex" "claude" "copilot" "gemini" -}}
-{{ $toolConfig := index $config $tool }}
-{{ if $toolConfig }}
-{{ if not (kindIs "map" $toolConfig) }}{{ fail (printf "profile %q tool instructions for %q must be a table" $profile $tool) }}{{ end }}
-{{ range $field := list "instructions" "additionalInstructions" -}}
-{{ $value := index $toolConfig $field }}
-{{ if and $value (not (kindIs "string" $value)) }}{{ fail (printf "profile %q tool %q field %q must be a string" $profile $tool $field) }}{{ end }}
-{{ end -}}
-{{ end -}}
-{{ end -}}
-{{ end -}}
-{{ range $tool := $tools -}}
-{{ if not (or (eq $tool "codex") (eq $tool "claude") (eq $tool "copilot") (eq $tool "gemini") (eq $tool "gh") (eq $tool "git") (eq $tool "vscode") (eq $tool "antigravity")) }}{{ fail (printf "unsupported profile tool %q in profile %q" $tool $profile) }}{{ end }}
-{{ end -}}
-{{ end -}}
-{{ end -}}
-{{ printf "\n" }}
+  {{- if not (or (eq $profile "instructions") (eq $profile "additionalInstructions")) -}}
+    {{- if not (regexMatch "^[a-zA-Z0-9._-]+$" $profile) -}}
+      {{- fail (printf "invalid profile name %q" $profile) -}}
+    {{- end -}}
+    {{- $tools := $config -}}
+    {{- if not (kindIs "slice" $config) -}}
+      {{- $tools = index $config "tools" -}}
+      {{- $profileInstructions := index $config "instructions" -}}
+      {{- if and $profileInstructions (not (kindIs "string" $profileInstructions)) -}}
+        {{- fail (printf "profile %q field %q must be a string" $profile "instructions") -}}
+      {{- end -}}
+      {{- $profileAdditionalInstructions := index $config "additionalInstructions" -}}
+      {{- if and $profileAdditionalInstructions (not (kindIs "string" $profileAdditionalInstructions)) -}}
+        {{- fail (printf "profile %q field %q must be a string" $profile "additionalInstructions") -}}
+      {{- end -}}
+      {{- range $tool := list "codex" "claude" "copilot" "gemini" -}}
+        {{- $toolConfig := index $config $tool -}}
+        {{- if $toolConfig -}}
+          {{- if not (kindIs "map" $toolConfig) -}}
+            {{- fail (printf "profile %q tool instructions for %q must be a table" $profile $tool) -}}
+          {{- end -}}
+          {{- range $field := list "instructions" "additionalInstructions" -}}
+            {{- $value := index $toolConfig $field -}}
+            {{- if and $value (not (kindIs "string" $value)) -}}
+              {{- fail (printf "profile %q tool %q field %q must be a string" $profile $tool $field) -}}
+            {{- end -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+    {{- range $tool := $tools -}}
+      {{- if not (or (eq $tool "codex") (eq $tool "claude") (eq $tool "copilot") (eq $tool "gemini") (eq $tool "gh") (eq $tool "git") (eq $tool "vscode") (eq $tool "antigravity")) -}}
+        {{- fail (printf "unsupported profile tool %q in profile %q" $tool $profile) -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- printf "\n" -}}
 # Initializes state directories for configured CLI and app profiles.
 set -eu
 umask 077
 
 profiles_base="$HOME/{{ $profilesDir }}"
 
+# Delete profile directories that are no longer declared in profiles.toml.
 remove_unconfigured_profiles() {
   [ -d "$profiles_base" ] || return 0
   for profile_dir in "$profiles_base"/* "$profiles_base"/.[!.]* "$profiles_base"/..?*; do
     [ -d "$profile_dir" ] || continue
     profile_name=${profile_dir##*/}
-    case "$profile_name" in
-{{ range $profile, $config := $profiles -}}
-{{ if not (or (eq $profile "instructions") (eq $profile "additionalInstructions")) -}}
-{{ $tools := $config }}
-{{ if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
-{{ if $tools }}      '{{ $profile }}') ;;
-{{ end -}}
-{{ end -}}
-{{ end -}}
-      *) rm -rf -- "$profile_dir" ;;
+    case "$profile_name" in{{ printf "\n" -}}
+{{- range $profile, $config := $profiles -}}
+  {{- if not (or (eq $profile "instructions") (eq $profile "additionalInstructions")) -}}
+    {{- $tools := $config -}}
+    {{- if not (kindIs "slice" $config) -}}
+      {{- $tools = index $config "tools" -}}
+    {{- end -}}
+    {{- if $tools -}}
+      {{ printf "      '%s') ;;\n" $profile }}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{ printf "      *) rm -rf -- \"$profile_dir\" ;;\n" }}
     esac
   done
 }
 
 remove_unconfigured_profiles
 
+# Create a profile's state directory for the selected tool.
 create_profile() {
   tool="$1"
   name="$2"
@@ -66,6 +87,7 @@ create_profile() {
   mkdir -p "$profile_dir"
 }
 
+# Link a shared configuration file into a profile without replacing user data.
 link_if_missing() {
   source_file="$1"
   target_file="$2"
@@ -77,6 +99,7 @@ link_if_missing() {
 
 profile_instruction_marker='<!-- Managed by chezmoi; edit profiles.toml instead. -->'
 
+# Restore a profile instruction file to the shared source when it is still managed.
 restore_shared_instructions() {
   source_file="$1"
   target_file="$2"
@@ -86,6 +109,8 @@ restore_shared_instructions() {
   link_if_missing "$source_file" "$target_file"
 }
 
+# Write profile instructions while preserving custom files and links.
+# Arguments: source, destination, mode, profile text, profile addendum, tool text, tool addendum.
 write_profile_instructions() {
   instruction_source="$1"
   instruction_target="$2"
@@ -136,6 +161,7 @@ write_profile_instructions() {
   mv -f "$instruction_temp" "$instruction_target"
 }
 
+# Select the instruction mode and write shared, profile, and tool instructions.
 write_tool_profile_instructions() {
   instruction_source="$1"
   instruction_target="$2"
