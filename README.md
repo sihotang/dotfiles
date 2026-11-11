@@ -109,15 +109,15 @@ home directory are managed outputs.
 
 ## Machine-specific settings
 
-Shared template defaults live in `home/.chezmoidata.toml`. Override them with
-per-machine values in `~/.config/chezmoi/chezmoi.toml`, outside this repository.
-The `home/.chezmoi.toml.tmpl` seeds local `[data]` values for the detected
+Shared template defaults live in `home/.chezmoidata.yaml`. Override them with
+per-machine values in `~/.config/chezmoi/chezmoi.yaml`, outside this repository.
+The `home/.chezmoi.yaml.tmpl` seeds local `data` values for the detected
 hostname and operating system. Add or override other values locally, for example:
 
-```toml
-[data]
-ollamaHost = "127.0.0.1:11434"
-workspaceDir = "Workspace"
+```yaml
+data:
+  ollamaHost: 127.0.0.1:11434
+  workspaceDir: Workspace
 ```
 
 `ollamaHost` configures the Ollama host used by the environment exports.
@@ -157,12 +157,12 @@ Git settings live under `home/dot_config/git/` and are included by the managed
 ## Profiles for CLI tools and app integrations
 
 Configure profiles in the machine-local, Git-ignored
-`home/.chezmoidata/profiles.toml` file. Create the `.chezmoidata` directory
+`home/.chezmoidata/profiles.yaml` file. Create the `.chezmoidata` directory
 under the source root (`home/` in this repo), then copy
-`examples/.chezmoidata/profiles.toml.example` as a starting point.
+`examples/.chezmoidata/profiles.yaml.example` as a starting point.
 
 Shared AI-agent instructions are machine-local too. Copy
-`examples/.chezmoidata/ai.toml.example` to `home/.chezmoidata/ai.toml` on each
+`examples/.chezmoidata/ai.yaml.example` to `home/.chezmoidata/ai.yaml` on each
 machine, then customize `ai.instructions` for that machine. The local
 `.chezmoidata` directory is ignored by Git. Provider templates supply a title
 such as `Codex` or `Claude Code` to the shared renderer. Create the local file
@@ -174,20 +174,20 @@ Each profile is an object with optional `name`, `email`, `displayName`, and a
 Profile IDs remain the stable names used by launchers and CLI directories.
 `displayName` is passed to integrations that support a separate display name;
 for VS Code it selects the matching native profile. If omitted, the profile ID
-is used. The local `profiles.toml` file is ignored by Git, so profile
+is used. The local `profiles.yaml` file is ignored by Git, so profile
 definitions stay on that machine. Other machine-specific options such as
-`defaultProfile` can remain in `~/.config/chezmoi/chezmoi.toml`. Set
+`defaultProfile` can remain in `~/.config/chezmoi/chezmoi.yaml`. Set
 `defaultProfile` to a configured profile that enables `vscode` to make plain
 `code` open that profile every time. Set it to `"Default"` to use VS Code's
 built-in Default Profile. `profilesDir` defaults to `.config/profiles` when
 omitted. For example, the machine-local config can contain:
 
-```toml
-[data]
-defaultProfile = "work"
+```yaml
+data:
+  defaultProfile: work
 ```
 
-Profiles can customize AI-agent instructions in the local `profiles.toml`:
+Profiles can customize AI-agent instructions in the local `profiles.yaml`:
 
 - `profiles.instructions` replaces shared AI instructions for all profiles by
   default.
@@ -208,65 +208,53 @@ Profiles can customize AI-agent instructions in the local `profiles.toml`:
   inherits from its parent, and an empty addendum leaves the parent's addendum
   in effect.
 
-For example, add `tools = ["codex"]` to each profile that should receive a
+For example, add `tools: [codex]` to each profile that should receive a
 Codex instruction file:
 
-```toml
-[profiles]
-instructions = """
-For every profile, make small changes and explain validation.
-"""
-
-additionalInstructions = """
-For every profile, summarize relevant risks.
-"""
-
-[profiles.work]
-tools = ["codex", "claude", "gemini"]
-instructions = """
-For work projects, prefer small changes and do not change public APIs without confirmation.
-"""
-
-additionalInstructions = """
-For work sessions, summarize API compatibility risks before editing.
-"""
-
-[profiles.personal]
-tools = ["codex"]
-
-additionalInstructions = """
-For personal projects, explore alternatives before choosing an implementation.
-"""
-
-[profiles.personal.codex]
-additionalInstructions = """
-Keep personal-project explanations concise and include meaningful tradeoffs.
-"""
+```yaml
+profiles:
+  instructions: |
+    For every profile, make small changes and explain validation.
+  additionalInstructions: |
+    For every profile, summarize relevant risks.
+  work:
+    tools: [codex, claude, gemini]
+    instructions: |
+      For work projects, prefer small changes and do not change public APIs without confirmation.
+    additionalInstructions: |
+      For work sessions, summarize API compatibility risks before editing.
+  personal:
+    tools: [codex]
+    additionalInstructions: |
+      For personal projects, explore alternatives before choosing an implementation.
+    codex:
+      additionalInstructions: |
+        Keep personal-project explanations concise and include meaningful tradeoffs.
 ```
 
 When a profile or tool override/addendum is configured, the setup script writes
 a generated instruction file into that profile's tool directory. Edit the
-local `profiles.toml` value to change it. With no custom instructions, profile
+local `profiles.yaml` value to change it. With no custom instructions, profile
 directories continue to symlink the shared provider file. Existing custom
 instruction files in profile directories are preserved and reported instead of
 being overwritten.
 
 Git identity follows `profiles.<id>.git.name/email`, then the profile-level
 `name/email` field independently, then Git's global configuration. A `git`
-table only affects profiles that include `git` in `tools`. For example:
+mapping only affects profiles that include `git` in `tools`. For example:
 
-```toml
-[profiles.personal]
-name = "Your Personal Name"
-email = "you@example.com"
-tools = ["git", "gh"]
-
-[profiles.personal.git]
-name = "Your Git Name"
-email = "another@example.com"
+```yaml
+profiles:
+  personal:
+    name: Your Personal Name
+    email: you@example.com
+    tools: [git, gh]
+    git:
+      name: Your Git Name
+      email: another@example.com
 ```
 
-Keep real names and email addresses in the ignored local `profiles.toml` file.
+Keep real names and email addresses in the ignored local `profiles.yaml` file.
 The `git-<profile>` launcher uses the configured identity and, when `gh` is
 also enabled, that profile's GitHub CLI credentials. Profiles without an
 identity override use the global identity from `~/.gitconfig.local`.

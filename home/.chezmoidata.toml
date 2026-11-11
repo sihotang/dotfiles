@@ -1,5 +1,0 @@
-# Shared defaults for templates. Override machine-specific values in the local
-# ~/.config/chezmoi/chezmoi.toml file or an ignored .chezmoidata/profiles.toml file.
-ollamaHost = "127.0.0.1:11434"
-workspaceDir = "Workspace"
-editor = "code --wait"
