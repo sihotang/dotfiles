@@ -14,14 +14,16 @@ touch "$tmpdir/chezmoi.toml"
 mkdir -p "$tmpdir/data-bootstrap-source/scripts" "$tmpdir/data-bootstrap-source/examples/.chezmoidata"
 cp scripts/copy-example-data.sh "$tmpdir/data-bootstrap-source/scripts/"
 cp examples/.chezmoidata/*.example "$tmpdir/data-bootstrap-source/examples/.chezmoidata/"
+printf '%s\n' home > "$tmpdir/data-bootstrap-source/.chezmoiroot"
 sh "$tmpdir/data-bootstrap-source/scripts/copy-example-data.sh" "$tmpdir/data-bootstrap-source" > /dev/null
-cmp -s examples/.chezmoidata/ai.toml.example "$tmpdir/data-bootstrap-source/home/.chezmoidata/ai.toml"
-cmp -s examples/.chezmoidata/profiles.toml.example "$tmpdir/data-bootstrap-source/home/.chezmoidata/profiles.toml"
-python3 -c 'import sys,tomllib; assert isinstance(tomllib.load(open(sys.argv[1], "rb"))["ai"]["instructions"], str)' "$tmpdir/data-bootstrap-source/home/.chezmoidata/ai.toml"
-python3 -c 'import sys,tomllib; assert "profiles" in tomllib.load(open(sys.argv[1], "rb"))' "$tmpdir/data-bootstrap-source/home/.chezmoidata/profiles.toml"
-printf '%s\n' 'Keep existing local data' > "$tmpdir/data-bootstrap-source/home/.chezmoidata/ai.toml"
+cmp -s examples/.chezmoidata/ai.yaml.example "$tmpdir/data-bootstrap-source/home/.chezmoidata/ai.yaml"
+cmp -s examples/.chezmoidata/profiles.yaml.example "$tmpdir/data-bootstrap-source/home/.chezmoidata/profiles.yaml"
+grep -Fx 'profiles:' "$tmpdir/data-bootstrap-source/home/.chezmoidata/profiles.yaml" > /dev/null
+"$CHEZMOI" --source "$tmpdir/data-bootstrap-source" --config "$tmpdir/chezmoi.toml" data --format=json > "$tmpdir/data-bootstrap.json"
+python3 -c 'import json,sys; data=json.load(open(sys.argv[1])); assert isinstance(data["ai"]["instructions"], str) and "personal" in data["profiles"]' "$tmpdir/data-bootstrap.json"
+printf '%s\n' 'Keep existing local data' > "$tmpdir/data-bootstrap-source/home/.chezmoidata/ai.yaml"
 sh "$tmpdir/data-bootstrap-source/scripts/copy-example-data.sh" "$tmpdir/data-bootstrap-source" > /dev/null
-grep -Fx 'Keep existing local data' "$tmpdir/data-bootstrap-source/home/.chezmoidata/ai.toml" > /dev/null
+grep -Fx 'Keep existing local data' "$tmpdir/data-bootstrap-source/home/.chezmoidata/ai.yaml" > /dev/null
 mkdir -p "$tmpdir/profile-instruction-source/home/.chezmoiscripts" "$tmpdir/profile-instruction-home/.codex"
 printf '%s\n' home > "$tmpdir/profile-instruction-source/.chezmoiroot"
 printf '%s\n' 'Shared agent baseline' > "$tmpdir/profile-instruction-home/.codex/AGENTS.md"
@@ -57,10 +59,12 @@ test "$(readlink "$tmpdir/empty-profile-home/.config/profiles/empty/codex/AGENTS
 grep -Fx "alias code='profile-use vscode Default'" "$tmpdir/aliases" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"profiles":null}' cat ~/.config/zsh/aliases.zsh > "$tmpdir/aliases-no-profiles"
 ! grep -F 'alias dotfiles-' "$tmpdir/aliases-no-profiles" > /dev/null
-"$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data "$PROFILE_TEST_DATA" execute-template --init --file home/.chezmoi.toml.tmpl > "$tmpdir/chezmoi.toml"
-grep -Fx '  defaultProfile = "Default"' "$tmpdir/chezmoi.toml" > /dev/null
-! grep -E '^\[data\.profiles([.]|])' "$tmpdir/chezmoi.toml" > /dev/null
-python3 -c 'import tomllib,sys; data=tomllib.load(open(sys.argv[1], "rb"))["data"]; assert data["profilesDir"] == ".config/profiles" and "profiles" not in data' "$tmpdir/chezmoi.toml"
+"$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data "$PROFILE_TEST_DATA" execute-template --init --file home/.chezmoi.yaml.tmpl > "$tmpdir/chezmoi.yaml"
+grep -Fx '  defaultProfile: Default' "$tmpdir/chezmoi.yaml" > /dev/null
+! grep -E '^  profiles:' "$tmpdir/chezmoi.yaml" > /dev/null
+mkdir -p "$tmpdir/config-source"
+"$CHEZMOI" --source "$tmpdir/config-source" --config "$tmpdir/chezmoi.yaml" data --format=json > "$tmpdir/chezmoi-config-data.json"
+python3 -c 'import json,sys; data=json.load(open(sys.argv[1])); assert data["profilesDir"] == ".config/profiles" and "profiles" not in data' "$tmpdir/chezmoi-config-data.json"
 grep -F "alias dotfiles='profile-use vscode Default" "$tmpdir/aliases" > /dev/null
 grep -F "alias dotfiles-review='profile-use vscode review" "$tmpdir/aliases" > /dev/null
 grep -F '$(dirname "$(chezmoi source-path)")' "$tmpdir/aliases" > /dev/null

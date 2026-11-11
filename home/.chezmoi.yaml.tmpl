@@ -1,0 +1,8 @@
+# Local chezmoi config defaults. Keep secrets out of this file.
+data:
+  machine: {{ .chezmoi.hostname | toYaml }}
+  os: {{ .chezmoi.os | toYaml }}
+  ollamaHost: {{ (index . "ollamaHost" | default "127.0.0.1:11434") | toYaml }}
+  workspaceDir: {{ (index . "workspaceDir" | default "Workspace") | toYaml }}
+  profilesDir: {{ (index . "profilesDir" | default ".config/profiles") | toYaml }}
+  defaultProfile: {{ (index . "defaultProfile" | default "Default") | toYaml }}
