@@ -105,6 +105,7 @@ extract() {
 {{- end -}}
 {{- end }}
 
+# Return success when PROFILE includes TOOL in its configured tool list.
 profile-enabled() {
   case "$1:$2" in{{ "\n" -}}
 {{- range $profile, $config := $profiles -}}
@@ -152,12 +153,121 @@ profile-git-config() {
   fi
 }
 
+# Clear profile-specific paths before launching a default or unprofiled application.
 profile-clear-environment() {
   unset CODEX_HOME CLAUDE_CONFIG_DIR COPILOT_HOME GEMINI_CLI_HOME GH_CONFIG_DIR
 }
 
+# Remove inherited GitHub tokens so gh uses the selected profile's credentials.
 profile-clear-gh-environment() {
   unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN
+}
+
+# Start VS Code with its profile-specific environment.
+profile-use-vscode() {
+  local profile="$1" gh_profile_enabled=0 git_profile_enabled=0
+  local vscode_profile="$profile"
+  local -a profile_env=()
+  shift
+
+  case "$profile" in{{ "\n" -}}
+{{- range $profile, $config := $profiles -}}
+{{- if not (kindIs "slice" $config) -}}
+{{- with index $config "displayName" -}}
+{{ printf "    \"%s\") vscode_profile=%s ;;\n" $profile (. | quote) }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{ printf "  esac\n" }}
+  case "$profile" in{{ "\n" -}}
+{{- range $profile, $config := $profiles -}}
+{{- $tools := $config -}}
+{{- if not (kindIs "slice" $config) -}}{{ $tools = index $config "tools" }}{{- end -}}
+{{- if has "vscode" $tools -}}
+{{ printf "    \"%s\")\n" $profile -}}
+{{- range $tool := $tools -}}
+{{- if eq $tool "codex" -}}
+{{ printf "      profile_env+=(\"CODEX_HOME=$HOME/%s/%s/codex\")\n" $profilesDir $profile -}}
+{{- else if eq $tool "claude" -}}
+{{ printf "      profile_env+=(\"CLAUDE_CONFIG_DIR=$HOME/%s/%s/claude\")\n" $profilesDir $profile -}}
+{{- else if eq $tool "copilot" -}}
+{{ printf "      profile_env+=(\"COPILOT_HOME=$HOME/%s/%s/copilot\")\n" $profilesDir $profile -}}
+{{- else if eq $tool "gemini" -}}
+{{ printf "      profile_env+=(\"GEMINI_CLI_HOME=$HOME/%s/%s/gemini\")\n" $profilesDir $profile -}}
+{{- else if eq $tool "gh" -}}
+{{ printf "      gh_profile_enabled=1\n" -}}
+{{ printf "      profile_env+=(\"GH_CONFIG_DIR=$HOME/%s/%s/gh\")\n" $profilesDir $profile -}}
+{{- else if eq $tool "git" -}}
+{{ printf "      git_profile_enabled=1\n" -}}
+{{- end -}}
+{{- end -}}
+{{ printf "      ;;\n" -}}
+{{- end -}}
+{{- end -}}
+{{ printf "    *) ;;\n  esac\n" }}
+
+  # VS Code inherits the first running instance's environment; quit it before switching profiles.
+  if (( gh_profile_enabled || git_profile_enabled )); then
+    (
+      if (( gh_profile_enabled )); then
+        profile-clear-gh-environment
+      fi
+      profile-git-config "$profile" "$gh_profile_enabled"
+      if [[ "$vscode_profile" == "Default" ]]; then
+        profile-clear-environment
+      fi
+      command env "${profile_env[@]}" code --profile "$vscode_profile" "$@"
+    )
+  elif [[ "$vscode_profile" == "Default" ]]; then
+    (
+      profile-clear-environment
+      command env "${profile_env[@]}" code --profile "$vscode_profile" "$@"
+    )
+  else
+    command env "${profile_env[@]}" code --profile "$vscode_profile" "$@"
+  fi
+}
+
+# Run Git with the selected profile's GitHub credentials and author identity.
+profile-use-git() {
+  local profile="$1"
+  shift
+  (
+    if profile-enabled gh "$profile"; then
+      profile-clear-gh-environment
+      export GH_CONFIG_DIR="$HOME/{{ $profilesDir }}/$profile/gh"
+    fi
+    profile-git-config "$profile"
+    command git "$@"
+  )
+}
+
+# Start a supported CLI with its profile-specific state directory.
+profile-use-cli() {
+  local tool="$1" profile="$2" profile_dir env_name cli
+  shift 2
+
+  case "$tool" in
+    codex) env_name=CODEX_HOME; cli=codex ;;
+    claude) env_name=CLAUDE_CONFIG_DIR; cli=claude ;;
+    copilot) env_name=COPILOT_HOME; cli=copilot ;;
+    gemini) env_name=GEMINI_CLI_HOME; cli=gemini ;;
+  esac
+
+  profile_dir="$HOME/{{ $profilesDir }}/$profile/$tool"
+  if [[ ! -d "$profile_dir" ]]; then
+    print -u2 "profile-use: profile not found: $tool/$profile"
+    return 1
+  fi
+  if [[ "$tool" == gh ]]; then
+    (
+      profile-clear-gh-environment
+      export GH_CONFIG_DIR="$profile_dir"
+      command gh "$@"
+    )
+  else
+    command env "$env_name=$profile_dir" "$cli" "$@"
+  fi
 }
 
 # profile-use TOOL PROFILE [arguments...] starts a CLI with an isolated state directory.
@@ -166,14 +276,9 @@ profile-use() {
     print -u2 'Usage: profile-use TOOL PROFILE [arguments...]'
     return 2
   fi
-  local tool="$1" profile="$2" profile_dir env_name cli gh_profile_enabled=0 git_profile_enabled=0
-  local -a profile_env
+  local tool="$1" profile="$2"
   case "$tool" in
-    codex) env_name=CODEX_HOME; cli=codex ;;
-    claude) env_name=CLAUDE_CONFIG_DIR; cli=claude ;;
-    copilot) env_name=COPILOT_HOME; cli=copilot ;;
-    gemini) env_name=GEMINI_CLI_HOME; cli=gemini ;;
-    gh|git|vscode) ;;
+    codex|claude|copilot|gemini|gh|git|vscode) ;;
     *) print -u2 'profile-use: TOOL must be codex, claude, copilot, gemini, gh, git, or vscode'; return 2 ;;
   esac
   if [[ ! "$profile" =~ '^[a-zA-Z0-9._-]+$' || "$profile" == '.' || "$profile" == '..' ]]; then
@@ -187,100 +292,11 @@ profile-use() {
     fi
   fi
   shift 2
-  if [[ "$tool" == vscode ]]; then
-    profile_env=()
-    local vscode_profile="$profile"
-    case "$profile" in{{ "\n" -}}
-{{- range $profile, $config := $profiles -}}
-{{- if not (kindIs "slice" $config) -}}
-{{- with index $config "displayName" -}}
-{{ printf "      \"%s\") vscode_profile=%s ;;\n" $profile (. | quote) }}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-    esac
-    case "$profile" in{{ "\n" -}}
-{{- range $profile, $config := $profiles -}}
-{{- $tools := $config -}}
-{{- if not (kindIs "slice" $config) -}}{{ $tools = index $config "tools" }}{{- end -}}
-{{- if has "vscode" $tools -}}
-{{ printf "      \"%s\")\n" $profile -}}
-{{- $vscodeProfile := $profile -}}
-{{- if not (kindIs "slice" $config) -}}
-{{- with index $config "displayName" -}}
-{{- $vscodeProfile = . -}}
-{{- end -}}
-{{- end -}}
-{{- range $tool := $tools -}}
-{{- if eq $tool "codex" -}}
-{{ printf "        profile_env+=(\"CODEX_HOME=$HOME/%s/%s/codex\")\n" $profilesDir $profile -}}
-{{- else if eq $tool "claude" -}}
-{{ printf "        profile_env+=(\"CLAUDE_CONFIG_DIR=$HOME/%s/%s/claude\")\n" $profilesDir $profile -}}
-{{- else if eq $tool "copilot" -}}
-{{ printf "        profile_env+=(\"COPILOT_HOME=$HOME/%s/%s/copilot\")\n" $profilesDir $profile -}}
-{{- else if eq $tool "gemini" -}}
-{{ printf "        profile_env+=(\"GEMINI_CLI_HOME=$HOME/%s/%s/gemini\")\n" $profilesDir $profile -}}
-{{- else if eq $tool "gh" -}}
-{{ printf "        gh_profile_enabled=1\n" -}}
-{{ printf "        profile_env+=(\"GH_CONFIG_DIR=$HOME/%s/%s/gh\")\n" $profilesDir $profile -}}
-{{- else if eq $tool "git" -}}
-{{ printf "        git_profile_enabled=1\n" -}}
-{{- end -}}
-{{- end -}}
-{{ printf "        ;;\n" -}}
-{{- end -}}
-{{- end -}}
-      *) ;;
-    esac
-    # VS Code inherits the first running instance's environment; quit it before switching profiles.
-    if (( gh_profile_enabled || git_profile_enabled )); then
-      (
-        if (( gh_profile_enabled )); then
-          profile-clear-gh-environment
-        fi
-        profile-git-config "$profile" "$gh_profile_enabled"
-        if [[ "$vscode_profile" == "Default" ]]; then
-          profile-clear-environment
-        fi
-        command env "${profile_env[@]}" code --profile "$vscode_profile" "$@"
-      )
-      return $?
-    fi
-    if [[ "$vscode_profile" == "Default" ]]; then
-      (
-        profile-clear-environment
-        command env "${profile_env[@]}" code --profile "$vscode_profile" "$@"
-      )
-      return $?
-    fi
-    command env "${profile_env[@]}" code --profile "$vscode_profile" "$@"
-    return $?
-  fi
-  if [[ "$tool" == git ]]; then
-    (
-      if profile-enabled gh "$profile"; then
-        profile-clear-gh-environment
-        export GH_CONFIG_DIR="$HOME/{{ $profilesDir }}/$profile/gh"
-      fi
-      profile-git-config "$profile"
-      command git "$@"
-    )
-    return $?
-  fi
-  profile_dir="$HOME/{{ $profilesDir }}/$profile/$tool"
-  if [[ ! -d "$profile_dir" ]]; then
-    print -u2 "profile-use: profile not found: $tool/$profile"
-    return 1
-  fi
-  if [[ "$tool" == gh ]]; then
-    (
-      profile-clear-gh-environment
-      export GH_CONFIG_DIR="$profile_dir"
-      command gh "$@"
-    )
-    return $?
-  fi
-  command env "$env_name=$profile_dir" "$cli" "$@"
+  case "$tool" in
+    vscode) profile-use-vscode "$profile" "$@" ;;
+    git) profile-use-git "$profile" "$@" ;;
+    *) profile-use-cli "$tool" "$profile" "$@" ;;
+  esac
 }
 
 {{- end }}
