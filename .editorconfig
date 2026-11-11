@@ -8,19 +8,42 @@ indent_style = space
 indent_size = 2
 trim_trailing_whitespace = true
 
-# Chezmoi dotfiles in the home source tree.
-[home/dot_*]
-indent_style = space
-
-# Match the indentation used by Git's config format in this repository.
-[home/dot_gitconfig]
+[*.go]
+indent_style = tab
 indent_size = 4
 
-# Makefiles require literal tabs for recipe lines.
-[Makefile]
+[*.json]
+indent_style = tab
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.lua]
+indent_size = 2
+
+[*.toml]
+indent_size = 2
+
+[*.py]
+indent_size = 4
+
+[*.rs]
+indent_size = 4
+
+[{configure,configure.*,config.*,*.{sh,yml,yaml}}]
+indent_size = 2
+indent_style = space
+
+[{dot_gitconfig,git/**}]
+indent_size = 4
+
+[{makefile.vc,nmake.opt}]
+end_of_line = crlf
 indent_style = tab
 indent_size = tab
 tab_width = 4
 
-[*.md]
-trim_trailing_whitespace = false
+[Makefile]
+indent_style = tab
+indent_size = tab
+tab_width = 4
