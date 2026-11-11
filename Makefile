@@ -2,7 +2,7 @@
 
 CHEZMOI ?= chezmoi
 CHEZMOI_SOURCE ?= $(CURDIR)
-PROFILE_TEST_DATA := {"defaultProfile":"Default","profiles":{"default":{"tools":["codex","vscode"],"displayName":"Default"},"review":{"tools":["codex","gh","git","vscode"],"displayName":"Review Profile","name":"Profile User","email":"profile@example.test","git":{"name":"Review User","email":"review@example.test"}}}}
+PROFILE_TEST_DATA := {"defaultProfile":"Default","profiles":{"default":{"tools":["codex","vscode"],"displayName":"Default"},"review":{"tools":["codex","gh","git","vscode"],"displayName":"Review Profile","name":"Profile User","email":"profile@example.test","git":{"name":"Review User","email":"review@example.test"}},"git_only":{"tools":["git","vscode"],"email":"git-only@example.test"}}}
 PROFILE_INSTRUCTION_TEST_DATA := {"profiles":{"instructions":"All profile base","additionalInstructions":"All profile addendum","inherit":{"tools":["codex"]},"empty_profile":{"tools":["codex"],"instructions":"","additionalInstructions":""},"empty_tool":{"tools":["codex"],"instructions":"Parent profile base","additionalInstructions":"Parent profile addendum","codex":{"instructions":"","additionalInstructions":""}},"specific":{"tools":["codex"],"instructions":"Specific\u0027s base","additionalInstructions":"Specific addendum"},"tool":{"tools":["codex"],"instructions":"Profile base","additionalInstructions":"Profile addendum","codex":{"instructions":"Tool base","additionalInstructions":"Tool addendum"}}}}
 ASSISTANT_CONFIGS := \
 	.agents/hooks.json \
@@ -83,11 +83,19 @@ check:
 	grep -F 'vscode_profile="Review Profile"' "$$tmpdir/functions" > /dev/null; \
 	grep -F 'CODEX_HOME=$$HOME/.config/profiles/review/codex' "$$tmpdir/functions" > /dev/null; \
 	grep -F 'CODEX_HOME=$$HOME/.config/profiles/default/codex' "$$tmpdir/functions" > /dev/null; \
-	grep -F 'export GIT_CONFIG_KEY_3=user.email' "$$tmpdir/functions" > /dev/null; \
-	grep -F "export GIT_CONFIG_VALUE_2='Review User'" "$$tmpdir/functions" > /dev/null; \
-	grep -F "export GIT_CONFIG_VALUE_3='review@example.test'" "$$tmpdir/functions" > /dev/null; \
+	grep -F 'git_config_parameters="$${git_config_parameters}$${git_config_parameters:+ }'\''user.name=Review User'\''"' "$$tmpdir/functions" > /dev/null; \
+	grep -F 'git_config_parameters="$${git_config_parameters}$${git_config_parameters:+ }'\''user.email=review@example.test'\''"' "$$tmpdir/functions" > /dev/null; \
+	GIT_CONFIG_COUNT=2 GIT_CONFIG_KEY_0=credential.helper GIT_CONFIG_KEY_1=credential.helper GIT_CONFIG_VALUE_1=stale zsh -c 'source "$$1"; profile-git-config review; test -z "$${GIT_CONFIG_VALUE_0+x}"; test "$$(git config user.name)" = "Review User"; test "$$(git config user.email)" = "review@example.test"; git config --get-all credential.helper | grep -Fx "!gh auth git-credential" > /dev/null' _ "$$tmpdir/functions"; \
+	printf '%s\n' '#!/bin/sh' 'printf "%s\n" "$${GIT_CONFIG_PARAMETERS-}"' > "$$tmpdir/profile-gh-bin/code"; \
+	chmod +x "$$tmpdir/profile-gh-bin/code"; \
+	PATH="$$tmpdir/profile-gh-bin:$$PATH" zsh -c 'source "$$1"; profile-use vscode git_only' _ "$$tmpdir/functions" > "$$tmpdir/profile-vscode-git-only"; \
+	grep -F "'user.email=git-only@example.test'" "$$tmpdir/profile-vscode-git-only" > /dev/null; \
+	! grep -F 'credential.helper' "$$tmpdir/profile-vscode-git-only" > /dev/null; \
 	grep -F 'profile-clear-environment() {' "$$tmpdir/functions" > /dev/null; \
 	test "$$(grep -F -c 'profile-clear-environment' "$$tmpdir/functions")" -eq 3; \
+	grep -F 'profile-clear-gh-environment() {' "$$tmpdir/functions" > /dev/null; \
+	test "$$(grep -F -c 'profile-clear-gh-environment' "$$tmpdir/functions")" -eq 4; \
+	! grep -F 'unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN' "$$tmpdir/functions" > /dev/null; \
 	grep -F 'profile-enabled() {' "$$tmpdir/functions" > /dev/null; \
 	! grep -F 'ai-profile-enabled' "$$tmpdir/functions" > /dev/null; \
 	! grep -F 'ai-use() {' "$$tmpdir/functions" > /dev/null; \
@@ -114,7 +122,7 @@ check:
 	sh -n "$$tmpdir/setup-profiles.sh" "$$tmpdir/setup-profiles-empty.sh" home/.chezmoiscripts/run_after_lint-zsh.sh install.sh scripts/copy-example-data.sh; \
 	grep -Fx '#!/bin/sh' "$$tmpdir/setup-profiles-empty.sh" > /dev/null; \
 	python3 -m json.tool "$$tmpdir/gemini-settings.json" > /dev/null; \
-	GIT_CONFIG_COUNT=2 GIT_CONFIG_KEY_0=credential.helper GIT_CONFIG_VALUE_0= GIT_CONFIG_KEY_1=credential.helper GIT_CONFIG_VALUE_1='!gh auth git-credential' git config --get-all credential.helper | grep -Fx '!gh auth git-credential' > /dev/null; \
+	GIT_CONFIG_PARAMETERS="'credential.helper=' 'credential.helper=!gh auth git-credential'" git config --get-all credential.helper | grep -Fx '!gh auth git-credential' > /dev/null; \
 	git diff --check; \
 	printf '%s\n' 'Repository checks passed.'
 

@@ -120,13 +120,11 @@ profile-enabled() {
 
 # Set the GitHub credential helper and optional profile-specific author identity.
 profile-git-config() {
-  local profile="$1" git_helper_prefix
-  git_helper_prefix=$(printf '\041')
-  export GIT_CONFIG_KEY_0=credential.helper
-  export GIT_CONFIG_VALUE_0=
-  export GIT_CONFIG_KEY_1=credential.helper
-  export GIT_CONFIG_VALUE_1="${git_helper_prefix}gh auth git-credential"
-  export GIT_CONFIG_COUNT=2
+  local profile="$1" gh_enabled="${2:-1}" git_config_parameters=''
+  if [[ "$gh_enabled" == 1 ]]; then
+    git_config_parameters="'credential.helper=' 'credential.helper=!gh auth git-credential'"
+  fi
+  unset GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0 GIT_CONFIG_KEY_1 GIT_CONFIG_VALUE_1
   case "$profile" in{{ "\n" -}}
 {{- range $profile, $config := $profiles -}}
 {{- $gitConfig := dict -}}
@@ -137,29 +135,29 @@ profile-git-config() {
 {{- if and (has "git" $tools) (or $gitName $gitEmail) -}}
 {{ printf "    \"%s\")\n" $profile -}}
 {{- if $gitName -}}
-{{ printf "      export GIT_CONFIG_KEY_2=user.name\n" -}}
-{{ printf "      export GIT_CONFIG_VALUE_2=%s\n" (printf "'%s'" (replace "'" "'\\''" $gitName)) -}}
-{{ printf "      export GIT_CONFIG_COUNT=$(( GIT_CONFIG_COUNT + 1 ))\n" -}}
+{{ printf "      git_config_parameters=\"${git_config_parameters}${git_config_parameters:+ }'user.name=%s'\"\n" (replace "'" "'\\''" $gitName) -}}
 {{- end -}}
 {{- if $gitEmail -}}
-{{- if $gitName -}}
-{{ printf "      export GIT_CONFIG_KEY_3=user.email\n" -}}
-{{ printf "      export GIT_CONFIG_VALUE_3=%s\n" (printf "'%s'" (replace "'" "'\\''" $gitEmail)) -}}
-{{- else -}}
-{{ printf "      export GIT_CONFIG_KEY_2=user.email\n" -}}
-{{ printf "      export GIT_CONFIG_VALUE_2=%s\n" (printf "'%s'" (replace "'" "'\\''" $gitEmail)) -}}
-{{- end -}}
-{{ printf "      export GIT_CONFIG_COUNT=$(( GIT_CONFIG_COUNT + 1 ))\n" -}}
+{{ printf "      git_config_parameters=\"${git_config_parameters}${git_config_parameters:+ }'user.email=%s'\"\n" (replace "'" "'\\''" $gitEmail) -}}
 {{- end -}}
 {{ printf "      ;;\n" -}}
 {{- end -}}
 {{- end -}}
-    *) export GIT_CONFIG_COUNT=2 ;;
+    *) ;;
   esac
+  if [[ -n "$git_config_parameters" ]]; then
+    export GIT_CONFIG_PARAMETERS="$git_config_parameters"
+  else
+    unset GIT_CONFIG_PARAMETERS
+  fi
 }
 
 profile-clear-environment() {
   unset CODEX_HOME CLAUDE_CONFIG_DIR COPILOT_HOME GEMINI_CLI_HOME GH_CONFIG_DIR
+}
+
+profile-clear-gh-environment() {
+  unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN
 }
 
 # profile-use TOOL PROFILE [arguments...] starts a CLI with an isolated state directory.
@@ -168,7 +166,7 @@ profile-use() {
     print -u2 'Usage: profile-use TOOL PROFILE [arguments...]'
     return 2
   fi
-  local tool="$1" profile="$2" profile_dir env_name cli gh_profile_enabled=0
+  local tool="$1" profile="$2" profile_dir env_name cli gh_profile_enabled=0 git_profile_enabled=0
   local -a profile_env
   case "$tool" in
     codex) env_name=CODEX_HOME; cli=codex ;;
@@ -225,6 +223,8 @@ profile-use() {
 {{- else if eq $tool "gh" -}}
 {{ printf "        gh_profile_enabled=1\n" -}}
 {{ printf "        profile_env+=(\"GH_CONFIG_DIR=$HOME/%s/%s/gh\")\n" $profilesDir $profile -}}
+{{- else if eq $tool "git" -}}
+{{ printf "        git_profile_enabled=1\n" -}}
 {{- end -}}
 {{- end -}}
 {{ printf "        ;;\n" -}}
@@ -233,10 +233,12 @@ profile-use() {
       *) ;;
     esac
     # VS Code inherits the first running instance's environment; quit it before switching profiles.
-    if (( gh_profile_enabled )); then
+    if (( gh_profile_enabled || git_profile_enabled )); then
       (
-        unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN
-        profile-git-config "$profile"
+        if (( gh_profile_enabled )); then
+          profile-clear-gh-environment
+        fi
+        profile-git-config "$profile" "$gh_profile_enabled"
         if [[ "$vscode_profile" == "Default" ]]; then
           profile-clear-environment
         fi
@@ -257,7 +259,7 @@ profile-use() {
   if [[ "$tool" == git ]]; then
     (
       if profile-enabled gh "$profile"; then
-        unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN
+        profile-clear-gh-environment
         export GH_CONFIG_DIR="$HOME/{{ $profilesDir }}/$profile/gh"
       fi
       profile-git-config "$profile"
@@ -272,7 +274,7 @@ profile-use() {
   fi
   if [[ "$tool" == gh ]]; then
     (
-      unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN
+      profile-clear-gh-environment
       export GH_CONFIG_DIR="$profile_dir"
       command gh "$@"
     )
