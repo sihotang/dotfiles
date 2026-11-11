@@ -206,6 +206,7 @@ write_profile_instructions "$HOME/.gemini/GEMINI.md" "$profile_dir/GEMINI.md" '{
 link_if_missing "$HOME/.gemini/settings.json" "$profile_dir/settings.json"
 {{ else if eq $tool "gh" -}}
 create_profile gh '{{ $profile }}'
+link_if_missing "$HOME/.config/gh/config.yml" "$profiles_base/{{ $profile }}/gh/config.yml"
 {{ end -}}
 {{ end -}}
 {{ end -}}
