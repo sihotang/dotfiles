@@ -136,6 +136,26 @@ write_profile_instructions() {
   mv -f "$instruction_temp" "$instruction_target"
 }
 
+write_tool_profile_instructions() {
+  instruction_source="$1"
+  instruction_target="$2"
+  tool_instructions="$3"
+  tool_additional_instructions="$4"
+  instruction_mode=shared
+
+  [ -z "$profile_instructions" ] || instruction_mode=profile
+  [ -z "$tool_instructions" ] || instruction_mode=tool
+
+  write_profile_instructions \
+    "$instruction_source" \
+    "$instruction_target" \
+    "$instruction_mode" \
+    "$profile_instructions" \
+    "$profile_additional_instructions" \
+    "$tool_instructions" \
+    "$tool_additional_instructions"
+}
+
 {{ range $profile, $config := $profiles -}}
 {{ if not (or (eq $profile "instructions") (eq $profile "additionalInstructions")) -}}
 {{ $tools := $config }}
@@ -161,10 +181,9 @@ profile_dir="$profiles_base/{{ $profile }}/codex"
 {{ if kindIs "map" $config -}}{{ $toolConfig = index $config "codex" | default dict }}{{ end -}}
 {{ $toolInstructions := index $toolConfig "instructions" | default "" -}}
 {{ $toolAdditionalInstructions := index $toolConfig "additionalInstructions" | default "" -}}
-{{ $instructionMode := "shared" -}}
-{{ if $profileInstructions -}}{{ $instructionMode = "profile" }}{{ end -}}
-{{ if $toolInstructions -}}{{ $instructionMode = "tool" }}{{ end -}}
-write_profile_instructions "$HOME/.codex/AGENTS.md" "$profile_dir/AGENTS.md" '{{ $instructionMode }}' '{{ replace "'" "'\"'\"'" $profileInstructions }}' '{{ replace "'" "'\"'\"'" $profileAdditionalInstructions }}' '{{ replace "'" "'\"'\"'" $toolInstructions }}' '{{ replace "'" "'\"'\"'" $toolAdditionalInstructions }}'
+profile_instructions='{{ replace "'" "'\"'\"'" $profileInstructions }}'
+profile_additional_instructions='{{ replace "'" "'\"'\"'" $profileAdditionalInstructions }}'
+write_tool_profile_instructions "$HOME/.codex/AGENTS.md" "$profile_dir/AGENTS.md" '{{ replace "'" "'\"'\"'" $toolInstructions }}' '{{ replace "'" "'\"'\"'" $toolAdditionalInstructions }}'
 if [ ! -f "$profile_dir/config.toml" ]; then
   printf '# Codex profile: %s\n# Store authentication in this profile for account isolation.\ncli_auth_credentials_store = "file"\n' '{{ $profile }}' > "$profile_dir/config.toml"
 elif ! grep -Eq '^[[:space:]]*cli_auth_credentials_store[[:space:]]*=' "$profile_dir/config.toml"; then
@@ -177,10 +196,9 @@ profile_dir="$profiles_base/{{ $profile }}/claude"
 {{ if kindIs "map" $config -}}{{ $toolConfig = index $config "claude" | default dict }}{{ end -}}
 {{ $toolInstructions := index $toolConfig "instructions" | default "" -}}
 {{ $toolAdditionalInstructions := index $toolConfig "additionalInstructions" | default "" -}}
-{{ $instructionMode := "shared" -}}
-{{ if $profileInstructions -}}{{ $instructionMode = "profile" }}{{ end -}}
-{{ if $toolInstructions -}}{{ $instructionMode = "tool" }}{{ end -}}
-write_profile_instructions "$HOME/.claude/CLAUDE.md" "$profile_dir/CLAUDE.md" '{{ $instructionMode }}' '{{ replace "'" "'\"'\"'" $profileInstructions }}' '{{ replace "'" "'\"'\"'" $profileAdditionalInstructions }}' '{{ replace "'" "'\"'\"'" $toolInstructions }}' '{{ replace "'" "'\"'\"'" $toolAdditionalInstructions }}'
+profile_instructions='{{ replace "'" "'\"'\"'" $profileInstructions }}'
+profile_additional_instructions='{{ replace "'" "'\"'\"'" $profileAdditionalInstructions }}'
+write_tool_profile_instructions "$HOME/.claude/CLAUDE.md" "$profile_dir/CLAUDE.md" '{{ replace "'" "'\"'\"'" $toolInstructions }}' '{{ replace "'" "'\"'\"'" $toolAdditionalInstructions }}'
 {{ else if eq $tool "copilot" -}}
 create_profile copilot '{{ $profile }}'
 profile_dir="$profiles_base/{{ $profile }}/copilot"
@@ -188,10 +206,9 @@ profile_dir="$profiles_base/{{ $profile }}/copilot"
 {{ if kindIs "map" $config -}}{{ $toolConfig = index $config "copilot" | default dict }}{{ end -}}
 {{ $toolInstructions := index $toolConfig "instructions" | default "" -}}
 {{ $toolAdditionalInstructions := index $toolConfig "additionalInstructions" | default "" -}}
-{{ $instructionMode := "shared" -}}
-{{ if $profileInstructions -}}{{ $instructionMode = "profile" }}{{ end -}}
-{{ if $toolInstructions -}}{{ $instructionMode = "tool" }}{{ end -}}
-write_profile_instructions "$HOME/.copilot/copilot-instructions.md" "$profile_dir/copilot-instructions.md" '{{ $instructionMode }}' '{{ replace "'" "'\"'\"'" $profileInstructions }}' '{{ replace "'" "'\"'\"'" $profileAdditionalInstructions }}' '{{ replace "'" "'\"'\"'" $toolInstructions }}' '{{ replace "'" "'\"'\"'" $toolAdditionalInstructions }}'
+profile_instructions='{{ replace "'" "'\"'\"'" $profileInstructions }}'
+profile_additional_instructions='{{ replace "'" "'\"'\"'" $profileAdditionalInstructions }}'
+write_tool_profile_instructions "$HOME/.copilot/copilot-instructions.md" "$profile_dir/copilot-instructions.md" '{{ replace "'" "'\"'\"'" $toolInstructions }}' '{{ replace "'" "'\"'\"'" $toolAdditionalInstructions }}'
 {{ else if eq $tool "gemini" -}}
 create_profile gemini '{{ $profile }}'
 profile_dir="$profiles_base/{{ $profile }}/gemini/.gemini"
@@ -199,10 +216,9 @@ profile_dir="$profiles_base/{{ $profile }}/gemini/.gemini"
 {{ if kindIs "map" $config -}}{{ $toolConfig = index $config "gemini" | default dict }}{{ end -}}
 {{ $toolInstructions := index $toolConfig "instructions" | default "" -}}
 {{ $toolAdditionalInstructions := index $toolConfig "additionalInstructions" | default "" -}}
-{{ $instructionMode := "shared" -}}
-{{ if $profileInstructions -}}{{ $instructionMode = "profile" }}{{ end -}}
-{{ if $toolInstructions -}}{{ $instructionMode = "tool" }}{{ end -}}
-write_profile_instructions "$HOME/.gemini/GEMINI.md" "$profile_dir/GEMINI.md" '{{ $instructionMode }}' '{{ replace "'" "'\"'\"'" $profileInstructions }}' '{{ replace "'" "'\"'\"'" $profileAdditionalInstructions }}' '{{ replace "'" "'\"'\"'" $toolInstructions }}' '{{ replace "'" "'\"'\"'" $toolAdditionalInstructions }}'
+profile_instructions='{{ replace "'" "'\"'\"'" $profileInstructions }}'
+profile_additional_instructions='{{ replace "'" "'\"'\"'" $profileAdditionalInstructions }}'
+write_tool_profile_instructions "$HOME/.gemini/GEMINI.md" "$profile_dir/GEMINI.md" '{{ replace "'" "'\"'\"'" $toolInstructions }}' '{{ replace "'" "'\"'\"'" $toolAdditionalInstructions }}'
 link_if_missing "$HOME/.gemini/settings.json" "$profile_dir/settings.json"
 {{ else if eq $tool "gh" -}}
 create_profile gh '{{ $profile }}'
