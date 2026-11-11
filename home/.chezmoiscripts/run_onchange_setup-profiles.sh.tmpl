@@ -161,102 +161,95 @@ write_profile_instructions() {
   mv -f "$instruction_temp" "$instruction_target"
 }
 
-# Initialize a supported tool's state directory and profile-specific configuration.
-# Arguments: profile, tool, instruction mode, profile text, profile addendum, tool text, tool addendum.
-setup_profile_tool() {
-  setup_profile="$1"
-  setup_tool="$2"
-  setup_instruction_mode="${3:-shared}"
-  setup_profile_instructions="${4:-}"
-  setup_profile_additional_instructions="${5:-}"
-  setup_tool_instructions="${6:-}"
-  setup_tool_additional_instructions="${7:-}"
+# Select the instruction mode and write shared, profile, and tool instructions.
+write_tool_profile_instructions() {
+  instruction_source="$1"
+  instruction_target="$2"
+  tool_instructions="$3"
+  tool_additional_instructions="$4"
+  instruction_mode=shared
 
-  create_profile "$setup_tool" "$setup_profile"
-  setup_profile_dir="$profiles_base/$setup_profile/$setup_tool"
-
-  case "$setup_tool" in
-    codex)
-      setup_instruction_source="$HOME/.codex/AGENTS.md"
-      setup_instruction_target="$setup_profile_dir/AGENTS.md"
-      ;;
-    claude)
-      setup_instruction_source="$HOME/.claude/CLAUDE.md"
-      setup_instruction_target="$setup_profile_dir/CLAUDE.md"
-      ;;
-    copilot)
-      setup_instruction_source="$HOME/.copilot/copilot-instructions.md"
-      setup_instruction_target="$setup_profile_dir/copilot-instructions.md"
-      ;;
-    gemini)
-      setup_profile_dir="$setup_profile_dir/.gemini"
-      setup_instruction_source="$HOME/.gemini/GEMINI.md"
-      setup_instruction_target="$setup_profile_dir/GEMINI.md"
-      ;;
-    gh)
-      link_if_missing "$HOME/.config/gh/config.yml" "$setup_profile_dir/config.yml"
-      return 0
-      ;;
-  esac
+  [ -z "$profile_instructions" ] || instruction_mode=profile
+  [ -z "$tool_instructions" ] || instruction_mode=tool
 
   write_profile_instructions \
-    "$setup_instruction_source" \
-    "$setup_instruction_target" \
-    "$setup_instruction_mode" \
-    "$setup_profile_instructions" \
-    "$setup_profile_additional_instructions" \
-    "$setup_tool_instructions" \
-    "$setup_tool_additional_instructions"
-
-  case "$setup_tool" in
-    codex)
-      if [ ! -f "$setup_profile_dir/config.toml" ]; then
-        printf '# Codex profile: %s\n# Store authentication in this profile for account isolation.\ncli_auth_credentials_store = "file"\n' "$setup_profile" > "$setup_profile_dir/config.toml"
-      elif ! grep -Eq '^[[:space:]]*cli_auth_credentials_store[[:space:]]*=' "$setup_profile_dir/config.toml"; then
-        printf '\ncli_auth_credentials_store = "file"\n' >> "$setup_profile_dir/config.toml"
-      fi
-      ;;
-    gemini)
-      link_if_missing "$HOME/.gemini/settings.json" "$setup_profile_dir/settings.json"
-      ;;
-  esac
+    "$instruction_source" \
+    "$instruction_target" \
+    "$instruction_mode" \
+    "$profile_instructions" \
+    "$profile_additional_instructions" \
+    "$tool_instructions" \
+    "$tool_additional_instructions"
 }
 
-{{ printf "\n" -}}
-{{- range $profile, $config := $profiles -}}
-  {{- if not (or (eq $profile "instructions") (eq $profile "additionalInstructions")) -}}
-    {{- $tools := $config -}}
-    {{- if not (kindIs "slice" $config) -}}
-      {{- $tools = index $config "tools" -}}
-    {{- end -}}
-    {{- $profileInstructions := $globalProfileInstructions -}}
-    {{- $profileAdditionalInstructions := $globalProfileAdditionalInstructions -}}
-    {{- if kindIs "map" $config -}}
-      {{- $profileInstructions = index $config "instructions" | default $globalProfileInstructions -}}
-      {{- $profileAdditionalConfig := index $config "additionalInstructions" | default "" -}}
-      {{- if $profileAdditionalConfig -}}
-        {{- if $profileAdditionalInstructions -}}
-          {{- $profileAdditionalInstructions = printf "%s\n\n%s" $profileAdditionalInstructions $profileAdditionalConfig -}}
-        {{- else -}}
-          {{- $profileAdditionalInstructions = $profileAdditionalConfig -}}
-        {{- end -}}
-      {{- end -}}
-    {{- end -}}
-    {{- range $tool := $tools -}}
-      {{- if or (eq $tool "codex") (eq $tool "claude") (eq $tool "copilot") (eq $tool "gemini") -}}
-        {{- $toolConfig := dict -}}
-        {{- if kindIs "map" $config -}}
-          {{- $toolConfig = index $config $tool | default dict -}}
-        {{- end -}}
-        {{- $toolInstructions := index $toolConfig "instructions" | default "" -}}
-        {{- $toolAdditionalInstructions := index $toolConfig "additionalInstructions" | default "" -}}
-        {{- $instructionMode := "shared" -}}
-        {{- if $profileInstructions -}}{{- $instructionMode = "profile" -}}{{- end -}}
-        {{- if $toolInstructions -}}{{- $instructionMode = "tool" -}}{{- end -}}
-setup_profile_tool '{{ $profile }}' '{{ $tool }}' '{{ $instructionMode }}' '{{ replace "'" "'\"'\"'" $profileInstructions }}' '{{ replace "'" "'\"'\"'" $profileAdditionalInstructions }}' '{{ replace "'" "'\"'\"'" $toolInstructions }}' '{{ replace "'" "'\"'\"'" $toolAdditionalInstructions }}'{{ printf "\n" -}}
-      {{- else if eq $tool "gh" -}}
-setup_profile_tool '{{ $profile }}' gh{{ printf "\n" -}}
-      {{- end -}}
-    {{- end -}}
-  {{- end -}}
-{{- end -}}
+{{ range $profile, $config := $profiles -}}
+{{ if not (or (eq $profile "instructions") (eq $profile "additionalInstructions")) -}}
+{{ $tools := $config }}
+{{ if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
+{{ $profileInstructions := $globalProfileInstructions -}}
+{{ $profileAdditionalInstructions := $globalProfileAdditionalInstructions -}}
+{{ if kindIs "map" $config -}}
+{{ $profileInstructions = index $config "instructions" | default $globalProfileInstructions -}}
+{{ $profileAdditionalConfig := index $config "additionalInstructions" | default "" -}}
+{{ if $profileAdditionalConfig -}}
+{{ if $profileAdditionalInstructions -}}
+{{ $profileAdditionalInstructions = printf "%s\n\n%s" $profileAdditionalInstructions $profileAdditionalConfig -}}
+{{ else -}}
+{{ $profileAdditionalInstructions = $profileAdditionalConfig -}}
+{{ end -}}
+{{ end -}}
+{{ end -}}
+{{ range $tool := $tools -}}
+{{ if eq $tool "codex" -}}
+create_profile codex '{{ $profile }}'
+profile_dir="$profiles_base/{{ $profile }}/codex"
+{{ $toolConfig := dict -}}
+{{ if kindIs "map" $config -}}{{ $toolConfig = index $config "codex" | default dict }}{{ end -}}
+{{ $toolInstructions := index $toolConfig "instructions" | default "" -}}
+{{ $toolAdditionalInstructions := index $toolConfig "additionalInstructions" | default "" -}}
+profile_instructions='{{ replace "'" "'\"'\"'" $profileInstructions }}'
+profile_additional_instructions='{{ replace "'" "'\"'\"'" $profileAdditionalInstructions }}'
+write_tool_profile_instructions "$HOME/.codex/AGENTS.md" "$profile_dir/AGENTS.md" '{{ replace "'" "'\"'\"'" $toolInstructions }}' '{{ replace "'" "'\"'\"'" $toolAdditionalInstructions }}'
+if [ ! -f "$profile_dir/config.toml" ]; then
+  printf '# Codex profile: %s\n# Store authentication in this profile for account isolation.\ncli_auth_credentials_store = "file"\n' '{{ $profile }}' > "$profile_dir/config.toml"
+elif ! grep -Eq '^[[:space:]]*cli_auth_credentials_store[[:space:]]*=' "$profile_dir/config.toml"; then
+  printf '\ncli_auth_credentials_store = "file"\n' >> "$profile_dir/config.toml"
+fi
+{{ else if eq $tool "claude" -}}
+create_profile claude '{{ $profile }}'
+profile_dir="$profiles_base/{{ $profile }}/claude"
+{{ $toolConfig := dict -}}
+{{ if kindIs "map" $config -}}{{ $toolConfig = index $config "claude" | default dict }}{{ end -}}
+{{ $toolInstructions := index $toolConfig "instructions" | default "" -}}
+{{ $toolAdditionalInstructions := index $toolConfig "additionalInstructions" | default "" -}}
+profile_instructions='{{ replace "'" "'\"'\"'" $profileInstructions }}'
+profile_additional_instructions='{{ replace "'" "'\"'\"'" $profileAdditionalInstructions }}'
+write_tool_profile_instructions "$HOME/.claude/CLAUDE.md" "$profile_dir/CLAUDE.md" '{{ replace "'" "'\"'\"'" $toolInstructions }}' '{{ replace "'" "'\"'\"'" $toolAdditionalInstructions }}'
+{{ else if eq $tool "copilot" -}}
+create_profile copilot '{{ $profile }}'
+profile_dir="$profiles_base/{{ $profile }}/copilot"
+{{ $toolConfig := dict -}}
+{{ if kindIs "map" $config -}}{{ $toolConfig = index $config "copilot" | default dict }}{{ end -}}
+{{ $toolInstructions := index $toolConfig "instructions" | default "" -}}
+{{ $toolAdditionalInstructions := index $toolConfig "additionalInstructions" | default "" -}}
+profile_instructions='{{ replace "'" "'\"'\"'" $profileInstructions }}'
+profile_additional_instructions='{{ replace "'" "'\"'\"'" $profileAdditionalInstructions }}'
+write_tool_profile_instructions "$HOME/.copilot/copilot-instructions.md" "$profile_dir/copilot-instructions.md" '{{ replace "'" "'\"'\"'" $toolInstructions }}' '{{ replace "'" "'\"'\"'" $toolAdditionalInstructions }}'
+{{ else if eq $tool "gemini" -}}
+create_profile gemini '{{ $profile }}'
+profile_dir="$profiles_base/{{ $profile }}/gemini/.gemini"
+{{ $toolConfig := dict -}}
+{{ if kindIs "map" $config -}}{{ $toolConfig = index $config "gemini" | default dict }}{{ end -}}
+{{ $toolInstructions := index $toolConfig "instructions" | default "" -}}
+{{ $toolAdditionalInstructions := index $toolConfig "additionalInstructions" | default "" -}}
+profile_instructions='{{ replace "'" "'\"'\"'" $profileInstructions }}'
+profile_additional_instructions='{{ replace "'" "'\"'\"'" $profileAdditionalInstructions }}'
+write_tool_profile_instructions "$HOME/.gemini/GEMINI.md" "$profile_dir/GEMINI.md" '{{ replace "'" "'\"'\"'" $toolInstructions }}' '{{ replace "'" "'\"'\"'" $toolAdditionalInstructions }}'
+link_if_missing "$HOME/.gemini/settings.json" "$profile_dir/settings.json"
+{{ else if eq $tool "gh" -}}
+create_profile gh '{{ $profile }}'
+link_if_missing "$HOME/.config/gh/config.yml" "$profiles_base/{{ $profile }}/gh/config.yml"
+{{ end -}}
+{{ end -}}
+{{ end -}}
+{{ end -}}
