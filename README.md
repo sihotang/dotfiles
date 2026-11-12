@@ -157,9 +157,10 @@ Git settings live under `home/dot_config/git/` and are included by the managed
 ## Profiles for CLI tools and app integrations
 
 Configure profiles in the machine-local, Git-ignored
-`home/.chezmoidata/profiles.yaml` file. Create the `.chezmoidata` directory
+`home/.chezmoidata/profile.yaml` file. Create the `.chezmoidata` directory
 under the source root (`home/` in this repo), then copy
-`examples/.chezmoidata/profiles.yaml.example` as a starting point.
+`examples/.chezmoidata/profile.yaml.example` as a starting point. This file
+contains both the top-level Git identity and the `profiles` mapping.
 
 Shared AI-agent instructions are machine-local too. Copy
 `examples/.chezmoidata/ai.yaml.example` to `home/.chezmoidata/ai.yaml` on each
@@ -169,7 +170,7 @@ such as `Codex` or `Claude Code` to the shared renderer. Create the local file
 before running `chezmoi apply` on a fresh machine so instructions are available
 to templates.
 
-Each profile is an object with optional `alias`, `name`, `email`, `displayName`,
+Each profile is an object with optional `alias`, `name`, `email`,
 `gh.username`, and a `tools` list. `gh.username` is the GitHub login selected by
 `gh auth switch`; it defaults to the profile ID when omitted. Set it when the
 GitHub login differs from the profile ID. `name` and
@@ -181,9 +182,9 @@ profile's Git identity, and `gh <alias> <command>` to use its GitHub CLI
 account. Git alias names replace periods and underscores with hyphens, and
 prefix `profile-` when the result starts with a number, to meet Git's alias
 name rules.
-`displayName` is passed to integrations that support a separate display name;
-for VS Code it selects the matching native profile. If omitted, the profile ID
-is used. The local `profiles.yaml` file is ignored by Git, so profile
+`name` sets the profile's Git identity fallback and selects the matching native
+VS Code profile. If omitted, the profile ID is used. The local `profile.yaml`
+file is ignored by Git, so profile
 definitions stay on that machine. Other machine-specific options such as
 `defaultProfile` can remain in `~/.config/chezmoi/chezmoi.yaml`. Set
 `defaultProfile` to a configured profile that enables `vscode` to make plain
@@ -196,7 +197,7 @@ data:
   defaultProfile: work
 ```
 
-Profiles can customize AI-agent instructions in the local `profiles.yaml`:
+Profiles can customize AI-agent instructions in the local `profile.yaml`:
 
 - `profiles.instructions` replaces shared AI instructions for all profiles by
   default.
@@ -242,7 +243,7 @@ profiles:
 
 When a profile or tool instruction override is configured, the setup script writes
 a generated instruction file into that profile's tool directory. Edit the
-local `profiles.yaml` value to change it. With no custom instructions, profile
+local `profile.yaml` value to change it. With no custom instructions, profile
 directories continue to symlink the shared provider file. Existing custom
 instruction files in profile directories are preserved and reported instead of
 being overwritten.
@@ -264,7 +265,7 @@ profiles:
       username: your-personal-github-username
 ```
 
-Keep real names and email addresses in the ignored local `profiles.yaml` file.
+Keep real names and email addresses in the ignored local `profile.yaml` file.
 The native Git alias uses the configured identity and, when `gh` is also
 enabled, switches to that profile's GitHub CLI account. The native GH alias
 also supplies the profile's Git identity to Git subprocesses launched by that

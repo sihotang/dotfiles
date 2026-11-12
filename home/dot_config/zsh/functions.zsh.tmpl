@@ -234,7 +234,7 @@ profile-use-vscode() {
   case "$profile" in{{ "\n" -}}
     {{- range $profile, $config := $profiles -}}
       {{- if not (kindIs "slice" $config) -}}
-        {{- with index $config "displayName" -}}
+        {{- with index $config "name" -}}
           {{- printf "    \"%s\") vscode_profile=%s ;;\n" $profile (. | quote) -}}
         {{- end -}}
       {{- end -}}
