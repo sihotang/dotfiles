@@ -5,7 +5,6 @@
 [init]
     defaultBranch = main
 {{- $profiles := (index . "profiles") | default dict }}
-{{- $profileDir := (index . "profilesDir") | default ".config/profiles" }}
 {{- $hasAliases := false }}
 {{- range $profile, $config := $profiles }}
   {{- $tools := $config }}
@@ -33,9 +32,17 @@
     {{- end }}
     {{- if not (regexMatch "^[a-zA-Z0-9._-]+$" $profileAlias) }}{{ fail (printf "invalid profile alias %q for profile %q" $profileAlias $profile) }}{{ end }}
     {{- $ghEnabled := has "gh" $tools }}
+    {{- $ghUsername := "" }}
+    {{- if $ghEnabled }}
+      {{- $ghConfig := dict }}
+      {{- if kindIs "map" $config }}{{ $ghConfig = index $config "gh" | default dict }}{{ end }}
+      {{- if not (kindIs "map" $ghConfig) }}{{ fail (printf "gh config for profile %q must be a table" $profile) }}{{ end }}
+      {{- $ghUsername = index $ghConfig "username" | default $profileAlias }}
+      {{- if not (regexMatch "^[a-zA-Z0-9-]+$" $ghUsername) }}{{ fail (printf "invalid GitHub username %q for profile %q" $ghUsername $profile) }}{{ end }}
+    {{- end }}
     {{- $gitAlias := regexReplaceAll "[^a-zA-Z0-9-]" $profileAlias "-" }}
     {{- if not (regexMatch "^[a-zA-Z]" $gitAlias) }}{{ $gitAlias = printf "profile-%s" $gitAlias }}{{ end }}
-{{ $gitAlias }} = "!f() { {{ if $ghEnabled }}unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN; export GH_CONFIG_DIR=\"$HOME/{{ $profileDir }}/{{ $profile }}/gh\"; {{ end }}git {{ if $name }}-c user.name=\"{{ $name }}\" {{ end }}{{ if $email }}-c user.email=\"{{ $email }}\" {{ end }}{{ if $ghEnabled }}-c credential.helper= -c credential.helper='!gh auth git-credential' {{ end }}\"$@\"; }; f"
+{{ $gitAlias }} = "!f() { {{ if $ghEnabled }}unset GH_CONFIG_DIR GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN; gh auth switch --hostname github.com --user {{ $ghUsername }} >/dev/null || return $?; {{ end }}git {{ if $name }}-c user.name=\"{{ $name }}\" {{ end }}{{ if $email }}-c user.email=\"{{ $email }}\" {{ end }}{{ if $ghEnabled }}-c credential.helper= -c credential.helper='!gh auth git-credential' {{ end }}\"$@\"; }; f"
   {{- end }}
 {{- end }}
 {{- end }}

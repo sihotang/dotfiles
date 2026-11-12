@@ -89,6 +89,21 @@ remove_unconfigured_profiles() {
 
 remove_unconfigured_profiles
 
+# Remove only the legacy shared-config symlink and empty GH profile folders.
+remove_legacy_gh_profile_dirs() {
+  [ -d "$profiles_base" ] || return 0
+  for gh_dir in "$profiles_base"/*/gh; do
+    [ -d "$gh_dir" ] || continue
+    gh_config="$gh_dir/config.yml"
+    if [ -L "$gh_config" ] && [ "$(readlink "$gh_config")" = "$HOME/.config/gh/config.yml" ]; then
+      rm -- "$gh_config"
+    fi
+    rmdir "$gh_dir" 2>/dev/null || :
+  done
+}
+
+remove_legacy_gh_profile_dirs
+
 # Create a profile's state directory for the selected tool.
 create_profile() {
   tool="$1"
@@ -275,9 +290,6 @@ fi
 {{ else if eq $tool "gemini" -}}
 link_if_missing "$HOME/.gemini/settings.json" "$profile_dir/settings.json"
 {{ end -}}
-{{ else if eq $tool "gh" -}}
-create_profile gh '{{ $profile }}'
-link_if_missing "$HOME/.config/gh/config.yml" "$profiles_base/{{ $profile }}/gh/config.yml"
 {{ end -}}
 {{ end -}}
 {{ end -}}

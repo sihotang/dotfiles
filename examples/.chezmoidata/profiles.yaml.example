@@ -24,6 +24,8 @@ profiles:
     git:
       name: Your Git Name
       email: another@example.com
+    gh:
+      username: your-personal-github-username
 
   work:
     name: Your Work Name
@@ -33,6 +35,8 @@ profiles:
       - codex
       - gh
       - vscode
+    gh:
+      username: your-work-github-username
     ai:
       force: true
       instructions: |
@@ -50,3 +54,5 @@ profiles:
       - codex
       - gh
       - vscode
+    gh:
+      username: your-client-github-username
