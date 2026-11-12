@@ -1,32 +1,38 @@
 # Copy these profiles into home/.chezmoidata/profiles.yaml and adjust as needed.
 profiles:
-  instructions: |
-    Use small, reviewable changes for every configured profile.
-  additionalInstructions: |
-    Include validation results in summaries for every configured profile.
   personal:
     name: Your Personal Name
     email: you@example.com
-    displayName: Personal
+    alias: personal
     tools: [vscode, gh, git, codex, claude, copilot, gemini, antigravity]
-    additionalInstructions: |
-      For personal projects, explore alternatives before choosing an implementation.
+    ai:
+      force: false
+      instructions: |
+        For personal projects, explore alternatives before choosing an implementation.
+    codex:
+      force: false
+      instructions: |
+        Keep the personal-project instructions concise and explain meaningful tradeoffs.
     git:
       name: Your Git Name
       email: another@example.com
-    codex:
-      additionalInstructions: |
-        Keep the personal-project instructions concise and explain meaningful tradeoffs.
+
   work:
     name: Your Work Name
     email: you@company.example
+    alias: work
     tools: [codex, gh, vscode]
-    displayName: Work
-    instructions: |
-      For work projects, prefer small changes and do not change public APIs without confirmation.
+    ai:
+      force: true
+      instructions: |
+        For work projects, prefer small changes and do not change public APIs without confirmation.
     codex:
+      force: false
       instructions: |
         For Codex in this profile, follow the work-specific Codex workflow documented here.
+
   client:
+    name: Your Client Name
+    email: you@client.example
     tools: [codex, gh, vscode]
-    displayName: Client
+    alias: your-client-alias

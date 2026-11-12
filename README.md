@@ -191,22 +191,16 @@ Profiles can customize AI-agent instructions in the local `profiles.yaml`:
 
 - `profiles.instructions` replaces shared AI instructions for all profiles by
   default.
-- `profiles.additionalInstructions` appends to the selected base instructions
-  for all profiles by default.
 - `profiles.<id>.instructions` replaces the provider's shared instructions for
   all AI tools enabled by that profile, and overrides `profiles.instructions`.
-- `profiles.<id>.additionalInstructions` appends to the active profile
-  instructions for all enabled AI tools in that profile, after the global
-  profile addendum.
-- `profiles.<id>.<tool>.instructions` replaces both shared and profile-level
-  instructions for that tool.
-- `profiles.<id>.<tool>.additionalInstructions` appends to the selected
-  instructions for that tool. When tool-specific `instructions` are set, the
-  tool addendum appends to those, and global/profile instructions and addenda
-  are skipped.
-- At every level, an empty string is treated as unset. The instruction value
-  inherits from its parent, and an empty addendum leaves the parent's addendum
-  in effect.
+- `profiles.<id>.<tool>.instructions` sets instructions for that tool. With
+  `force: true`, it replaces shared and profile-level text. With `force: false`
+  or an omitted `force`, it appends to inherited text.
+- `profiles.<id>.ai.instructions` sets instructions for all AI tools enabled by
+  that profile. With `force: true`, it replaces inherited profile instructions.
+  With `force: false` or an omitted `force`, it appends to inherited text.
+- `force` defaults to `false`; set it to `true` to replace inherited
+  instructions. An empty `instructions` string is treated as unset.
 
 For example, add `tools: [codex]` to each profile that should receive a
 Codex instruction file:
@@ -215,24 +209,29 @@ Codex instruction file:
 profiles:
   instructions: |
     For every profile, make small changes and explain validation.
-  additionalInstructions: |
-    For every profile, summarize relevant risks.
   work:
     tools: [codex, claude, gemini]
-    instructions: |
-      For work projects, prefer small changes and do not change public APIs without confirmation.
-    additionalInstructions: |
-      For work sessions, summarize API compatibility risks before editing.
+    ai:
+      force: true
+      instructions: |
+        For work projects, prefer small changes and do not change public APIs without confirmation.
+    codex:
+      force: false
+      instructions: |
+        For work sessions, summarize API compatibility risks before editing.
   personal:
     tools: [codex]
-    additionalInstructions: |
-      For personal projects, explore alternatives before choosing an implementation.
+    ai:
+      force: false
+      instructions: |
+        For personal projects, explore alternatives before choosing an implementation.
     codex:
-      additionalInstructions: |
+      force: false
+      instructions: |
         Keep personal-project explanations concise and include meaningful tradeoffs.
 ```
 
-When a profile or tool override/addendum is configured, the setup script writes
+When a profile or tool instruction override is configured, the setup script writes
 a generated instruction file into that profile's tool directory. Edit the
 local `profiles.yaml` value to change it. With no custom instructions, profile
 directories continue to symlink the shared provider file. Existing custom
