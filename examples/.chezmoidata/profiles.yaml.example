@@ -4,7 +4,15 @@ profiles:
     name: Your Personal Name
     email: you@example.com
     alias: personal
-    tools: [vscode, gh, git, codex, claude, copilot, gemini, antigravity]
+    tools:
+      - antigravity
+      - claude
+      - codex
+      - copilot
+      - gemini
+      - gh
+      - git
+      - vscode
     ai:
       force: false
       instructions: |
@@ -16,12 +24,19 @@ profiles:
     git:
       name: Your Git Name
       email: another@example.com
+    gh:
+      username: your-personal-github-username
 
   work:
     name: Your Work Name
     email: you@company.example
     alias: work
-    tools: [codex, gh, vscode]
+    tools:
+      - codex
+      - gh
+      - vscode
+    gh:
+      username: your-work-github-username
     ai:
       force: true
       instructions: |
@@ -34,5 +49,10 @@ profiles:
   client:
     name: Your Client Name
     email: you@client.example
-    tools: [codex, gh, vscode]
     alias: your-client-alias
+    tools:
+      - codex
+      - gh
+      - vscode
+    gh:
+      username: your-client-github-username

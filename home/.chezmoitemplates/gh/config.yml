@@ -18,6 +18,24 @@ aliases:
     issues: issue list
     rv: repo view
     runs: run list
+{{ $profiles := (index . "profiles") | default dict }}
+{{- range $profile, $config := $profiles }}
+  {{- $tools := $config }}
+  {{- if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
+  {{- if has "gh" $tools }}
+    {{- $profileAlias := $profile }}
+    {{- $ghConfig := dict }}
+    {{- if kindIs "map" $config }}
+      {{- $profileAlias = index $config "alias" | default $profile }}
+      {{- $ghConfig = index $config "gh" | default dict }}
+    {{- end }}
+    {{- if not (kindIs "map" $ghConfig) }}{{ fail (printf "gh config for profile %q must be a table" $profile) }}{{ end }}
+    {{- $username := index $ghConfig "username" | default $profileAlias }}
+    {{- if not (regexMatch "^[a-zA-Z0-9-]+$" $username) }}{{ fail (printf "invalid GitHub username %q for profile %q" $username $profile) }}{{ end }}
+    {{- if not (regexMatch "^[a-zA-Z0-9._-]+$" $profileAlias) }}{{ fail (printf "invalid profile alias %q for profile %q" $profileAlias $profile) }}{{ end }}
+    {{- printf "    %s: %s\n" $profileAlias (printf "!unset GH_CONFIG_DIR GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN; gh auth switch --hostname github.com --user %s >/dev/null && gh \"$@\"" $username | quote) }}
+  {{- end }}
+{{- end }}
 # The path to a unix socket through which to send HTTP connections. If blank, HTTP traffic will be handled by net/http.DefaultTransport.
 http_unix_socket:
 # What web browser gh should use when opening URLs. If blank, will refer to environment.

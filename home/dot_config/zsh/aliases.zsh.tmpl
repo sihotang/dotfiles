@@ -60,7 +60,7 @@ alias code-{{ $profile }}='profile-use vscode {{ $profile }}'
 alias dotfiles-{{ $profile }}='profile-use vscode {{ $profile }} "$(dirname "$(chezmoi source-path)")"'
 {{ else if eq $tool "antigravity" -}}
 {{ else if eq $tool "gh" -}}
-alias gh-{{ $profile }}='profile-use gh {{ $profile }}'
+{{ else if eq $tool "git" -}}
 {{ else -}}
 alias {{ $tool }}-{{ $profile }}='profile-use {{ $tool }} {{ $profile }}'
 {{ end -}}

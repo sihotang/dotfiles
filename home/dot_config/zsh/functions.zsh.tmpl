@@ -102,6 +102,15 @@ extract() {
 {{- if not (kindIs "map" $gitConfig) -}}{{ fail (printf "git config for profile %q must be a table" $profile) }}{{- end -}}
 {{- $gitName := index $gitConfig "name" | default (index $config "name" | default "") -}}
 {{- $gitEmail := index $gitConfig "email" | default (index $config "email" | default "") -}}
+{{- if has "gh" $tools -}}
+{{- $ghUsername := $profile -}}
+{{- if kindIs "map" $config -}}
+  {{- $ghConfig := index $config "gh" | default dict -}}
+  {{- if not (kindIs "map" $ghConfig) -}}{{ fail (printf "gh config for profile %q must be a table" $profile) }}{{- end -}}
+  {{- $ghUsername = index $ghConfig "username" | default (index $config "alias" | default $profile) -}}
+{{- end -}}
+{{- if not (regexMatch "^[a-zA-Z0-9-]+$" $ghUsername) -}}{{ fail (printf "invalid GitHub username %q for profile %q" $ghUsername $profile) }}{{- end -}}
+{{- end -}}
 {{- end -}}
 {{- end }}
 
@@ -163,6 +172,29 @@ profile-clear-gh-environment() {
   unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN
 }
 
+# Switch the shared GitHub CLI configuration to the profile's stored account.
+profile-gh-switch() {
+  local profile="$1" username=''
+  case "$profile" in{{ "\n" -}}
+{{- range $profile, $config := $profiles -}}
+{{- $tools := $config -}}
+{{- if not (kindIs "slice" $config) -}}{{ $tools = index $config "tools" }}{{- end -}}
+{{- if has "gh" $tools -}}
+{{- $username := $profile -}}
+{{- if kindIs "map" $config -}}
+  {{- $ghConfig := index $config "gh" | default dict -}}
+  {{- $username = index $ghConfig "username" | default (index $config "alias" | default $profile) -}}
+{{- end -}}
+{{ printf "    %s) username=%s ;;\n" $profile ($username | quote) -}}
+{{- end -}}
+{{- end -}}
+    *) print -u2 "profile-use: GitHub account is not configured: $profile"; return 1 ;;
+  esac
+  profile-clear-gh-environment
+  unset GH_CONFIG_DIR
+  command gh auth switch --hostname github.com --user "$username"
+}
+
 # Start VS Code with its profile-specific environment.
 profile-use-vscode() {
   local profile="$1" gh_profile_enabled=0 git_profile_enabled=0
@@ -196,7 +228,6 @@ profile-use-vscode() {
 {{ printf "      profile_env+=(\"GEMINI_CLI_HOME=$HOME/%s/%s/gemini\")\n" $profilesDir $profile -}}
 {{- else if eq $tool "gh" -}}
 {{ printf "      gh_profile_enabled=1\n" -}}
-{{ printf "      profile_env+=(\"GH_CONFIG_DIR=$HOME/%s/%s/gh\")\n" $profilesDir $profile -}}
 {{- else if eq $tool "git" -}}
 {{ printf "      git_profile_enabled=1\n" -}}
 {{- end -}}
@@ -210,7 +241,7 @@ profile-use-vscode() {
   if (( gh_profile_enabled || git_profile_enabled )); then
     (
       if (( gh_profile_enabled )); then
-        profile-clear-gh-environment
+        profile-gh-switch "$profile" || return $?
       fi
       profile-git-config "$profile" "$gh_profile_enabled"
       if [[ "$vscode_profile" == "Default" ]]; then
@@ -234,8 +265,7 @@ profile-use-git() {
   shift
   (
     if profile-enabled gh "$profile"; then
-      profile-clear-gh-environment
-      export GH_CONFIG_DIR="$HOME/{{ $profilesDir }}/$profile/gh"
+      profile-gh-switch "$profile" || return $?
     fi
     profile-git-config "$profile"
     command git "$@"
@@ -247,19 +277,18 @@ profile-use-cli() {
   local tool="$1" profile="$2" profile_dir env_name cli
   shift 2
 
+  if [[ "$tool" == gh ]]; then
+    (
+      profile-gh-switch "$profile" || return $?
+      command gh "$@"
+    )
+    return $?
+  fi
+
   profile_dir="$HOME/{{ $profilesDir }}/$profile/$tool"
   if [[ ! -d "$profile_dir" ]]; then
     print -u2 "profile-use: profile not found: $tool/$profile"
     return 1
-  fi
-
-  if [[ "$tool" == gh ]]; then
-    (
-      profile-clear-gh-environment
-      export GH_CONFIG_DIR="$profile_dir"
-      command gh "$@"
-    )
-    return $?
   fi
 
   case "$tool" in

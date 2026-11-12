@@ -169,9 +169,18 @@ such as `Codex` or `Claude Code` to the shared renderer. Create the local file
 before running `chezmoi apply` on a fresh machine so instructions are available
 to templates.
 
-Each profile is an object with optional `name`, `email`, `displayName`, and a
-`tools` array. `name` and `email` are the profile-level Git identity fallback.
-Profile IDs remain the stable names used by launchers and CLI directories.
+Each profile is an object with optional `alias`, `name`, `email`, `displayName`,
+`gh.username`, and a `tools` list. `gh.username` is the GitHub login selected by
+`gh auth switch`; it defaults to the profile's `alias` (or profile ID) when
+omitted. Set it when that shortcut differs from the GitHub login. `name` and
+`email` are the profile-level Git identity
+fallback. Profile IDs remain the stable names used by CLI directories and
+configuration. `alias` sets the native Git and GitHub CLI account alias names;
+if omitted, the profile ID is used. Run `git <alias> <command>` to use a
+profile's Git identity, and `gh <alias> <command>` to use its GitHub CLI
+account. Git alias names replace periods and underscores with hyphens, and
+prefix `profile-` when the result starts with a number, to meet Git's alias
+name rules.
 `displayName` is passed to integrations that support a separate display name;
 for VS Code it selects the matching native profile. If omitted, the profile ID
 is used. The local `profiles.yaml` file is ignored by Git, so profile
@@ -251,12 +260,15 @@ profiles:
     git:
       name: Your Git Name
       email: another@example.com
+    gh:
+      username: your-personal-github-username
 ```
 
 Keep real names and email addresses in the ignored local `profiles.yaml` file.
-The `git-<profile>` launcher uses the configured identity and, when `gh` is
-also enabled, that profile's GitHub CLI credentials. Profiles without an
-identity override use the global identity from `~/.gitconfig.local`.
+The native Git alias uses the configured identity and, when `gh` is also
+enabled, switches to that profile's GitHub CLI account. The alias resolves to the
+profile ID, whose account settings come from `profiles.yaml`. Profiles without
+an identity override use the global identity from `~/.gitconfig`.
 
 Then `code-sio-shared` opens the VS Code profile named `Sio Shared`.
 `dotfiles` opens this chezmoi source directory in the built-in Default Profile,
@@ -265,20 +277,24 @@ and `dotfiles-sio-shared` opens it in the `Sio Shared` profile. A
 enables `vscode`.
 
 This creates directories such as `~/.config/profiles/work/codex/` and
-`~/.config/profiles/personal/<cli>/`. Run `chezmoi apply` to create them and
-seed shared instructions. A profile mapped to an empty tool list is removed
-from `~/.config/profiles/` on apply. Profile settings and state stay outside
-the repo.
+`~/.config/profiles/personal/<tool>/` for tools with per-profile state. GH
+accounts use the shared `~/.config/gh/` configuration. Run `chezmoi apply` to
+create profile directories and seed shared instructions. A profile mapped to
+an empty tool list is removed from `~/.config/profiles/` on apply. Profile
+settings and state stay outside the repo.
 
-Sign in to each CLI under the profile you want to use:
+Sign in to each CLI first; run `gh auth login` for each account before using
+profile aliases to switch between them:
 
 ```sh
 codex-work
 codex-personal
-gh-work auth login
-gh-personal auth login
-git-work push
-git-personal push
+gh auth login
+# Repeat `gh auth login` for each account.
+gh auth login
+git work push
+git personal push
+git your-client-alias push
 claude-personal
 copilot-personal
 gemini-personal
@@ -288,22 +304,23 @@ profile-use gh personal auth status
 profile-use codex personal --help
 ```
 
-`profile-use TOOL PROFILE [arguments…]` is the general launcher. The generated
-`<tool>-<profile>` shortcuts are equivalent. Plain CLI commands continue to
-use their normal configuration directories. Gemini stores its files in a
-`.gemini/` directory inside the profile's Gemini directory.
+`profile-use TOOL PROFILE [arguments…]` is the general launcher for profiled
+tools; other tools' shortcuts use `<tool>-<profile>`. `gh` aliases and
+`profile-use gh PROFILE` use the shared `~/.config/gh/` configuration and first
+switch to the username in `profiles.<id>.gh.username`. Sign in to each account
+with plain `gh auth login` before using profile aliases. Gemini stores its
+files in a `.gemini/` directory inside the profile's Gemini directory.
 
-Each `gh-<profile>` launcher sets `GH_CONFIG_DIR` to
-`~/.config/profiles/<profile>/gh`; run `gh-<profile> auth login` separately for
-each account. The launcher removes `GH_TOKEN`, `GITHUB_TOKEN`,
+Each native `gh <alias>` command uses `gh auth switch` to select the configured
+GitHub account. The alias removes `GH_CONFIG_DIR`, `GH_TOKEN`, `GITHUB_TOKEN`,
 `GH_ENTERPRISE_TOKEN`, and `GITHUB_ENTERPRISE_TOKEN` from its child process so
-environment tokens do not override the profile's saved account. GitHub CLI
-may store credentials in the operating system credential manager; the profile
-directory holds the corresponding CLI configuration. See the [gh environment
-variable reference](https://cli.github.com/manual/gh_help_environment).
+environment overrides do not take precedence over the selected account.
+GitHub CLI may store credentials in the operating system credential manager.
+See the [gh environment variable reference](https://cli.github.com/manual/gh_help_environment).
 
-For Git over HTTPS, `git-<profile>` runs Git with that profile's GitHub CLI
-credential helper without changing global Git config. A VS Code profile with
+For Git over HTTPS, `git <alias> <command>` switches to that profile's GitHub
+account and runs Git with the GitHub CLI credential helper without changing
+global Git config. A VS Code profile with
 `gh` enabled also configures the helper for plain `git` commands in its
 integrated terminal. SSH remotes continue to use the SSH key selected by SSH,
 so use an HTTPS remote when you want the GitHub CLI profile to choose the

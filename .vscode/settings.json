@@ -1,3 +1,7 @@
 {
+	"files.associations": {
+		"**/*_gitconfig.tmpl": "properties",
+		"**/git/config.tmpl": "properties"
+	},
 	"prettier.useEditorConfig": true
 }
