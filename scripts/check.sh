@@ -84,14 +84,30 @@ test -L "$tmpdir/empty-profile-home/.config/profiles/empty/codex/AGENTS.md"
 test "$(readlink "$tmpdir/empty-profile-home/.config/profiles/empty/codex/AGENTS.md")" = "$tmpdir/empty-profile-home/.codex/AGENTS.md"
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data "$PROFILE_TEST_DATA" cat ~/.config/zsh/aliases.zsh > "$tmpdir/aliases"
 grep -Fx "alias code='profile-use vscode Default'" "$tmpdir/aliases" > /dev/null
-grep -Fx "alias git-review-account='profile-use git review'" "$tmpdir/aliases" > /dev/null
-grep -Fx "alias gh-review-account='profile-use gh review'" "$tmpdir/aliases" > /dev/null
-grep -Fx "alias git-git_only='profile-use git git_only'" "$tmpdir/aliases" > /dev/null
-if "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"profiles":{"bad":{"alias":"bad alias","tools":["git"]}}}' cat ~/.config/zsh/aliases.zsh > "$tmpdir/invalid-profile-alias" 2>&1; then
+! grep -E "alias (git|gh)-review-account=" "$tmpdir/aliases" > /dev/null
+if "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"profiles":{"bad":{"alias":"bad alias","tools":["git"]}}}' cat ~/.config/git/config > "$tmpdir/invalid-profile-alias" 2>&1; then
   printf '%s\n' 'Invalid profile alias was accepted.' >&2
   exit 1
 fi
 grep -F 'invalid profile alias' "$tmpdir/invalid-profile-alias" > /dev/null
+"$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data "$PROFILE_TEST_DATA" cat ~/.config/git/config > "$tmpdir/git-config"
+grep -F 'review-account = "!f() { unset GH_TOKEN' "$tmpdir/git-config" > /dev/null
+grep -F -- '-c user.name=\"Review User\" -c user.email=\"review@example.test\"' "$tmpdir/git-config" > /dev/null
+grep -F 'git-only = "!f() { git -c user.email=\"git-only@example.test\"' "$tmpdir/git-config" > /dev/null
+GIT_CONFIG_GLOBAL="$tmpdir/git-config" GIT_CONFIG_SYSTEM=/dev/null git review-account config user.name | grep -Fx 'Review User' > /dev/null
+GIT_CONFIG_GLOBAL="$tmpdir/git-config" GIT_CONFIG_SYSTEM=/dev/null git review-account config user.email | grep -Fx 'review@example.test' > /dev/null
+"$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data "$PROFILE_TEST_DATA" cat ~/.config/gh/config.yml > "$tmpdir/gh-config"
+grep -F 'review-account: "!unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN; GH_CONFIG_DIR=' "$tmpdir/gh-config" > /dev/null
+mkdir -p "$tmpdir/gh-config-dir"
+cp "$tmpdir/gh-config" "$tmpdir/gh-config-dir/config.yml"
+GH_CONFIG_DIR="$tmpdir/gh-config-dir" gh alias list | grep -F 'review-account' > /dev/null
+mkdir -p "$tmpdir/gh-bin" "$tmpdir/gh-home"
+printf '%s\n' '#!/bin/sh' 'printf "%s\n" "${GH_CONFIG_DIR-}" "$*"' > "$tmpdir/gh-bin/gh"
+chmod +x "$tmpdir/gh-bin/gh"
+REAL_GH=$(command -v gh)
+PATH="$tmpdir/gh-bin:$PATH" HOME="$tmpdir/gh-home" GH_CONFIG_DIR="$tmpdir/gh-config-dir" GH_TOKEN=shared-token "$REAL_GH" review-account auth status > "$tmpdir/gh-alias-result"
+grep -Fx "$tmpdir/gh-home/.config/profiles/review/gh" "$tmpdir/gh-alias-result" > /dev/null
+grep -Fx 'auth status' "$tmpdir/gh-alias-result" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"profiles":null}' cat ~/.config/zsh/aliases.zsh > "$tmpdir/aliases-no-profiles"
 ! grep -F 'alias dotfiles-' "$tmpdir/aliases-no-profiles" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data "$PROFILE_TEST_DATA" execute-template --init --file home/.chezmoi.yaml.tmpl > "$tmpdir/chezmoi.yaml"

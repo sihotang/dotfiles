@@ -18,6 +18,18 @@ aliases:
     issues: issue list
     rv: repo view
     runs: run list
+{{ $profiles := (index . "profiles") | default dict }}
+{{ $profileDir := (index . "profilesDir") | default ".config/profiles" }}
+{{- range $profile, $config := $profiles }}
+  {{- $tools := $config }}
+  {{- if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
+  {{- if has "gh" $tools }}
+    {{- $profileAlias := $profile }}
+    {{- if kindIs "map" $config }}{{ $profileAlias = index $config "alias" | default $profile }}{{ end }}
+    {{- if not (regexMatch "^[a-zA-Z0-9._-]+$" $profileAlias) }}{{ fail (printf "invalid profile alias %q for profile %q" $profileAlias $profile) }}{{ end }}
+    {{- printf "    %s: %s\n" $profileAlias (printf "!unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN; GH_CONFIG_DIR=\"$HOME/%s/%s/gh\" gh \"$@\"" $profileDir $profile | quote) }}
+  {{- end }}
+{{- end }}
 # The path to a unix socket through which to send HTTP connections. If blank, HTTP traffic will be handled by net/http.DefaultTransport.
 http_unix_socket:
 # What web browser gh should use when opening URLs. If blank, will refer to environment.
