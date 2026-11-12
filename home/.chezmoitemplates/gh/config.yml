@@ -26,14 +26,33 @@ aliases:
     {{- $profileAlias := $profile }}
     {{- $ghConfig := dict }}
     {{- if kindIs "map" $config }}
-      {{- $profileAlias = index $config "alias" | default $profile }}
+      {{- $profileAlias = printf "%v" (index $config "alias" | default $profile) }}
       {{- $ghConfig = index $config "gh" | default dict }}
     {{- end }}
     {{- if not (kindIs "map" $ghConfig) }}{{ fail (printf "gh config for profile %q must be a table" $profile) }}{{ end }}
-    {{- $username := index $ghConfig "username" | default $profileAlias }}
+    {{- $username := index $ghConfig "username" | default $profile }}
     {{- if not (regexMatch "^[a-zA-Z0-9-]+$" $username) }}{{ fail (printf "invalid GitHub username %q for profile %q" $username $profile) }}{{ end }}
+    {{- $gitEnabled := has "git" $tools }}
+    {{- $gitName := "" }}
+    {{- $gitEmail := "" }}
+    {{- if and $gitEnabled (kindIs "map" $config) }}
+      {{- $gitName = printf "%v" (index $config "name" | default "") }}
+      {{- $gitEmail = printf "%v" (index $config "email" | default "") }}
+      {{- $gitConfig := index $config "git" | default dict }}
+      {{- if kindIs "map" $gitConfig }}
+        {{- $gitName = printf "%v" (index $gitConfig "name" | default $gitName) }}
+        {{- $gitEmail = printf "%v" (index $gitConfig "email" | default $gitEmail) }}
+      {{- end }}
+    {{- end }}
+    {{- $gitConfigParameters := list }}
+    {{- if $gitName }}{{ $gitConfigParameters = append $gitConfigParameters (printf "'user.name=%s'" $gitName) }}{{ end }}
+    {{- if $gitEmail }}{{ $gitConfigParameters = append $gitConfigParameters (printf "'user.email=%s'" $gitEmail) }}{{ end }}
+    {{- $gitConfigEnv := "" }}
+    {{- if $gitConfigParameters }}{{ $gitConfigEnv = printf "GIT_CONFIG_PARAMETERS='%s' " (join " " $gitConfigParameters | replace "'" "'\\''") }}{{ end }}
     {{- if not (regexMatch "^[a-zA-Z0-9._-]+$" $profileAlias) }}{{ fail (printf "invalid profile alias %q for profile %q" $profileAlias $profile) }}{{ end }}
-    {{- printf "    %s: %s\n" $profileAlias (printf "!unset GH_CONFIG_DIR GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN; gh auth switch --hostname github.com --user %s >/dev/null && gh \"$@\"" $username | quote) }}
+    {{- $ghAlias := $profileAlias }}
+    {{- if regexMatch "^[0-9]+$" $ghAlias }}{{ $ghAlias = printf "%q" $ghAlias }}{{ end }}
+    {{- printf "    %s: %s\n" $ghAlias (printf "!unset GH_CONFIG_DIR GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN GIT_CONFIG_PARAMETERS; gh auth switch --hostname github.com --user %s >/dev/null && %sgh \"$@\"" $username $gitConfigEnv | quote) }}
   {{- end }}
 {{- end }}
 # The path to a unix socket through which to send HTTP connections. If blank, HTTP traffic will be handled by net/http.DefaultTransport.
