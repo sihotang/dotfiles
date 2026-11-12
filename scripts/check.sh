@@ -5,7 +5,7 @@ set -eu
 
 CHEZMOI=${CHEZMOI:-chezmoi}
 CHEZMOI_SOURCE=${CHEZMOI_SOURCE:-$PWD}
-PROFILE_TEST_DATA='{"defaultProfile":"Default","profiles":{"default":{"tools":["codex","vscode"],"displayName":"Default"},"review":{"tools":["codex","gh","git","vscode"],"displayName":"Review Profile","name":"Profile User","email":"profile@example.test","git":{"name":"Review User","email":"review@example.test"}},"git_only":{"tools":["git","vscode"],"email":"git-only@example.test"}}}'
+PROFILE_TEST_DATA='{"defaultProfile":"Default","profiles":{"default":{"tools":["codex","vscode"],"displayName":"Default"},"review":{"tools":["codex","gh","git","vscode"],"displayName":"Review Profile","alias":"review-account","name":"Profile User","email":"profile@example.test","git":{"name":"Review User","email":"review@example.test"}},"git_only":{"tools":["git","vscode"],"email":"git-only@example.test"}}}'
 PROFILE_INSTRUCTION_TEST_DATA='{"profiles":{"instructions":"All profile base","inherit":{"tools":["codex"]},"empty_profile":{"tools":["codex"],"instructions":""},"empty_tool":{"tools":["codex"],"instructions":"Parent profile base","codex":{"instructions":""}},"specific":{"tools":["codex"],"instructions":"Specific\u0027s base"},"tool":{"tools":["codex"],"instructions":"Profile base","codex":{"force":true,"instructions":"Tool replacement"}}}}'
 PROFILE_FORCE_TEST_DATA='{"profiles":{"instructions":"Global base","ai_append":{"tools":["codex"],"instructions":"Profile base","ai":{"force":false,"instructions":"AI append"},"codex":{"force":false,"instructions":"Codex append"}},"ai_default":{"tools":["codex"],"ai":{"instructions":"AI default append"}},"ai_force":{"tools":["codex"],"instructions":"Profile base","ai":{"force":true,"instructions":"AI replacement"}},"tool_force_false":{"tools":["codex"],"instructions":"Profile base","codex":{"force":false,"instructions":"Tool append"}},"tool_default":{"tools":["codex"],"instructions":"Tool parent base","codex":{"instructions":"Tool default append"}},"tool_force_true":{"tools":["codex"],"instructions":"Profile base","codex":{"force":true,"instructions":"Tool replacement"}}}}'
 
@@ -84,6 +84,14 @@ test -L "$tmpdir/empty-profile-home/.config/profiles/empty/codex/AGENTS.md"
 test "$(readlink "$tmpdir/empty-profile-home/.config/profiles/empty/codex/AGENTS.md")" = "$tmpdir/empty-profile-home/.codex/AGENTS.md"
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data "$PROFILE_TEST_DATA" cat ~/.config/zsh/aliases.zsh > "$tmpdir/aliases"
 grep -Fx "alias code='profile-use vscode Default'" "$tmpdir/aliases" > /dev/null
+grep -Fx "alias git-review-account='profile-use git review'" "$tmpdir/aliases" > /dev/null
+grep -Fx "alias gh-review-account='profile-use gh review'" "$tmpdir/aliases" > /dev/null
+grep -Fx "alias git-git_only='profile-use git git_only'" "$tmpdir/aliases" > /dev/null
+if "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"profiles":{"bad":{"alias":"bad alias","tools":["git"]}}}' cat ~/.config/zsh/aliases.zsh > "$tmpdir/invalid-profile-alias" 2>&1; then
+  printf '%s\n' 'Invalid profile alias was accepted.' >&2
+  exit 1
+fi
+grep -F 'invalid profile alias' "$tmpdir/invalid-profile-alias" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"profiles":null}' cat ~/.config/zsh/aliases.zsh > "$tmpdir/aliases-no-profiles"
 ! grep -F 'alias dotfiles-' "$tmpdir/aliases-no-profiles" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data "$PROFILE_TEST_DATA" execute-template --init --file home/.chezmoi.yaml.tmpl > "$tmpdir/chezmoi.yaml"
