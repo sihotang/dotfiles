@@ -171,8 +171,8 @@ to templates.
 
 Each profile is an object with optional `alias`, `name`, `email`, `displayName`,
 `gh.username`, and a `tools` list. `gh.username` is the GitHub login selected by
-`gh auth switch`; it defaults to the profile's `alias` (or profile ID) when
-omitted. Set it when that shortcut differs from the GitHub login. `name` and
+`gh auth switch`; it defaults to the profile ID when omitted. Set it when the
+GitHub login differs from the profile ID. `name` and
 `email` are the profile-level Git identity
 fallback. Profile IDs remain the stable names used by CLI directories and
 configuration. `alias` sets the native Git and GitHub CLI account alias names;
@@ -266,9 +266,11 @@ profiles:
 
 Keep real names and email addresses in the ignored local `profiles.yaml` file.
 The native Git alias uses the configured identity and, when `gh` is also
-enabled, switches to that profile's GitHub CLI account. The alias resolves to the
-profile ID, whose account settings come from `profiles.yaml`. Profiles without
-an identity override use the global identity from `~/.gitconfig`.
+enabled, switches to that profile's GitHub CLI account. The native GH alias
+also supplies the profile's Git identity to Git subprocesses launched by that
+GH command when the profile enables both tools. This Git identity is scoped to
+the command and does not change global Git config. Profiles without an identity
+override use the global identity from `~/.gitconfig`.
 
 Then `code-sio-shared` opens the VS Code profile named `Sio Shared`.
 `dotfiles` opens this chezmoi source directory in the built-in Default Profile,
@@ -315,6 +317,9 @@ Each native `gh <alias>` command uses `gh auth switch` to select the configured
 GitHub account. The alias removes `GH_CONFIG_DIR`, `GH_TOKEN`, `GITHUB_TOKEN`,
 `GH_ENTERPRISE_TOKEN`, and `GITHUB_ENTERPRISE_TOKEN` from its child process so
 environment overrides do not take precedence over the selected account.
+When the profile also enables `git`, the alias passes its Git identity to Git
+subprocesses launched by that GH command. If the profile enables only one
+tool, the alias switches only that tool.
 GitHub CLI may store credentials in the operating system credential manager.
 See the [gh environment variable reference](https://cli.github.com/manual/gh_help_environment).
 

@@ -88,42 +88,63 @@ extract() {
 }
 
 {{- $profiles := (index . "profiles") | default dict }}
-{{- if $profiles }}
 {{- $profilesDir := (index . "profilesDir") | default ".config/profiles" }}
-{{- range $profile, $config := $profiles -}}
-{{- if not (regexMatch "^[a-zA-Z0-9._-]+$" $profile) -}}{{ fail (printf "invalid profile name %q" $profile) }}{{- end -}}
-{{- $tools := $config -}}
-{{- if not (kindIs "slice" $config) -}}{{ $tools = index $config "tools" }}{{- end -}}
-{{- range $tool := $tools -}}
-{{- if not (or (eq $tool "codex") (eq $tool "claude") (eq $tool "copilot") (eq $tool "gemini") (eq $tool "gh") (eq $tool "git") (eq $tool "vscode") (eq $tool "antigravity")) -}}{{ fail (printf "unsupported profile tool %q in profile %q" $tool $profile) }}{{- end -}}
-{{- end -}}
-{{- if not (kindIs "slice" $config) -}}
-{{- $gitConfig := index $config "git" | default dict -}}
-{{- if not (kindIs "map" $gitConfig) -}}{{ fail (printf "git config for profile %q must be a table" $profile) }}{{- end -}}
-{{- $gitName := index $gitConfig "name" | default (index $config "name" | default "") -}}
-{{- $gitEmail := index $gitConfig "email" | default (index $config "email" | default "") -}}
-{{- if has "gh" $tools -}}
-{{- $ghUsername := $profile -}}
-{{- if kindIs "map" $config -}}
-  {{- $ghConfig := index $config "gh" | default dict -}}
-  {{- if not (kindIs "map" $ghConfig) -}}{{ fail (printf "gh config for profile %q must be a table" $profile) }}{{- end -}}
-  {{- $ghUsername = index $ghConfig "username" | default (index $config "alias" | default $profile) -}}
-{{- end -}}
-{{- if not (regexMatch "^[a-zA-Z0-9-]+$" $ghUsername) -}}{{ fail (printf "invalid GitHub username %q for profile %q" $ghUsername $profile) }}{{- end -}}
-{{- end -}}
-{{- end -}}
-{{- end }}
+{{- if and (kindIs "map" $profiles) (gt (len $profiles) 0) }}
+  {{- range $profile, $config := $profiles }}
+    {{- if not (regexMatch "^[a-zA-Z0-9._-]+$" $profile) }}
+      {{- fail (printf "invalid profile name %q" $profile) }}
+    {{- end }}
+
+    {{- $tools := $config }}
+    {{- if not (kindIs "slice" $config) }}
+      {{- $tools = index $config "tools" }}
+    {{- end }}
+    {{- range $tool := $tools }}
+      {{- if not (or
+        (eq $tool "codex")
+        (eq $tool "claude")
+        (eq $tool "copilot")
+        (eq $tool "gemini")
+        (eq $tool "gh")
+        (eq $tool "git")
+        (eq $tool "vscode")
+        (eq $tool "antigravity")
+      ) }}
+        {{- fail (printf "unsupported profile tool %q in profile %q" $tool $profile) }}
+      {{- end }}
+    {{- end }}
+
+    {{- if not (kindIs "slice" $config) }}
+      {{- $gitConfig := index $config "git" | default dict }}
+      {{- if not (kindIs "map" $gitConfig) }}
+        {{- fail (printf "git config for profile %q must be a table" $profile) }}
+      {{- end }}
+
+      {{- if has "gh" $tools }}
+        {{- $ghConfig := index $config "gh" | default dict }}
+        {{- if not (kindIs "map" $ghConfig) }}
+          {{- fail (printf "gh config for profile %q must be a table" $profile) }}
+        {{- end }}
+        {{- $ghUsername := index $ghConfig "username" | default $profile }}
+        {{- if not (regexMatch "^[a-zA-Z0-9-]+$" $ghUsername) }}
+          {{- fail (printf "invalid GitHub username %q for profile %q" $ghUsername $profile) }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
 
 # Return success when PROFILE includes TOOL in its configured tool list.
 profile-enabled() {
   case "$1:$2" in{{ "\n" -}}
-{{- range $profile, $config := $profiles -}}
-{{- $tools := $config -}}
-{{- if not (kindIs "slice" $config) -}}{{ $tools = index $config "tools" }}{{- end -}}
-{{- range $tool := $tools -}}
-{{ printf "    \"%s:%s\") return 0 ;;\n" $tool $profile }}
-{{- end -}}
-{{- end -}}
+    {{- range $profile, $config := $profiles -}}
+      {{- $tools := $config -}}
+      {{- if not (kindIs "slice" $config) -}}
+        {{- $tools = index $config "tools" -}}
+      {{- end -}}
+      {{- range $tool := $tools -}}
+        {{- printf "    \"%s:%s\") return 0 ;;\n" $tool $profile -}}
+      {{- end -}}
+    {{- end -}}
     *) return 1 ;;
   esac
 }
@@ -136,23 +157,28 @@ profile-git-config() {
   fi
   unset GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0 GIT_CONFIG_KEY_1 GIT_CONFIG_VALUE_1
   case "$profile" in{{ "\n" -}}
-{{- range $profile, $config := $profiles -}}
-{{- $gitConfig := dict -}}
-{{- if not (kindIs "slice" $config) -}}{{ $gitConfig = index $config "git" | default dict }}{{- end -}}
-{{- $gitName := index $gitConfig "name" | default (index $config "name" | default "") -}}
-{{- $gitEmail := index $gitConfig "email" | default (index $config "email" | default "") -}}
-{{- $tools := index $config "tools" -}}
-{{- if and (has "git" $tools) (or $gitName $gitEmail) -}}
-{{ printf "    \"%s\")\n" $profile -}}
-{{- if $gitName -}}
-{{ printf "      git_config_parameters=\"${git_config_parameters}${git_config_parameters:+ }'user.name=%s'\"\n" (replace "'" "'\\''" $gitName) -}}
-{{- end -}}
-{{- if $gitEmail -}}
-{{ printf "      git_config_parameters=\"${git_config_parameters}${git_config_parameters:+ }'user.email=%s'\"\n" (replace "'" "'\\''" $gitEmail) -}}
-{{- end -}}
-{{ printf "      ;;\n" -}}
-{{- end -}}
-{{- end -}}
+    {{- range $profile, $config := $profiles -}}
+      {{- $profileData := dict -}}
+      {{- $tools := $config -}}
+      {{- $gitConfig := dict -}}
+      {{- if not (kindIs "slice" $config) -}}
+        {{- $profileData = $config -}}
+        {{- $tools = index $config "tools" -}}
+        {{- $gitConfig = index $config "git" | default dict -}}
+      {{- end -}}
+      {{- $gitName := printf "%v" (index $gitConfig "name" | default (index $profileData "name" | default "")) -}}
+      {{- $gitEmail := printf "%v" (index $gitConfig "email" | default (index $profileData "email" | default "")) -}}
+      {{- if and (has "git" $tools) (or $gitName $gitEmail) -}}
+        {{- printf "    \"%s\")\n" $profile -}}
+        {{- if $gitName -}}
+          {{- printf "      git_config_parameters=\"${git_config_parameters}${git_config_parameters:+ }'user.name=%s'\"\n" (replace "'" "'\\''" $gitName) -}}
+        {{- end -}}
+        {{- if $gitEmail -}}
+          {{- printf "      git_config_parameters=\"${git_config_parameters}${git_config_parameters:+ }'user.email=%s'\"\n" (replace "'" "'\\''" $gitEmail) -}}
+        {{- end -}}
+        {{- printf "      ;;\n" -}}
+      {{- end -}}
+    {{- end -}}
     *) ;;
   esac
   if [[ -n "$git_config_parameters" ]]; then
@@ -176,22 +202,25 @@ profile-clear-gh-environment() {
 profile-gh-switch() {
   local profile="$1" username=''
   case "$profile" in{{ "\n" -}}
-{{- range $profile, $config := $profiles -}}
-{{- $tools := $config -}}
-{{- if not (kindIs "slice" $config) -}}{{ $tools = index $config "tools" }}{{- end -}}
-{{- if has "gh" $tools -}}
-{{- $username := $profile -}}
-{{- if kindIs "map" $config -}}
-  {{- $ghConfig := index $config "gh" | default dict -}}
-  {{- $username = index $ghConfig "username" | default (index $config "alias" | default $profile) -}}
-{{- end -}}
-{{ printf "    %s) username=%s ;;\n" $profile ($username | quote) -}}
-{{- end -}}
-{{- end -}}
+    {{- range $profile, $config := $profiles -}}
+      {{- $tools := $config -}}
+      {{- if not (kindIs "slice" $config) -}}
+        {{- $tools = index $config "tools" -}}
+      {{- end -}}
+      {{- if has "gh" $tools -}}
+        {{- $username := $profile -}}
+        {{- if kindIs "map" $config -}}
+          {{- $ghConfig := index $config "gh" | default dict -}}
+          {{- $username = index $ghConfig "username" | default $profile -}}
+        {{- end -}}
+        {{- printf "    %s) username=%s ;;\n" $profile ($username | quote) -}}
+      {{- end -}}
+    {{- end -}}
     *) print -u2 "profile-use: GitHub account is not configured: $profile"; return 1 ;;
   esac
   profile-clear-gh-environment
   unset GH_CONFIG_DIR
+  unset GIT_CONFIG_PARAMETERS
   command gh auth switch --hostname github.com --user "$username"
 }
 
@@ -203,39 +232,41 @@ profile-use-vscode() {
   shift
 
   case "$profile" in{{ "\n" -}}
-{{- range $profile, $config := $profiles -}}
-{{- if not (kindIs "slice" $config) -}}
-{{- with index $config "displayName" -}}
-{{ printf "    \"%s\") vscode_profile=%s ;;\n" $profile (. | quote) }}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-{{ printf "  esac\n" }}
+    {{- range $profile, $config := $profiles -}}
+      {{- if not (kindIs "slice" $config) -}}
+        {{- with index $config "displayName" -}}
+          {{- printf "    \"%s\") vscode_profile=%s ;;\n" $profile (. | quote) -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+    {{- printf "  esac\n" }}
   case "$profile" in{{ "\n" -}}
-{{- range $profile, $config := $profiles -}}
-{{- $tools := $config -}}
-{{- if not (kindIs "slice" $config) -}}{{ $tools = index $config "tools" }}{{- end -}}
-{{- if has "vscode" $tools -}}
-{{ printf "    \"%s\")\n" $profile -}}
-{{- range $tool := $tools -}}
-{{- if eq $tool "codex" -}}
-{{ printf "      profile_env+=(\"CODEX_HOME=$HOME/%s/%s/codex\")\n" $profilesDir $profile -}}
-{{- else if eq $tool "claude" -}}
-{{ printf "      profile_env+=(\"CLAUDE_CONFIG_DIR=$HOME/%s/%s/claude\")\n" $profilesDir $profile -}}
-{{- else if eq $tool "copilot" -}}
-{{ printf "      profile_env+=(\"COPILOT_HOME=$HOME/%s/%s/copilot\")\n" $profilesDir $profile -}}
-{{- else if eq $tool "gemini" -}}
-{{ printf "      profile_env+=(\"GEMINI_CLI_HOME=$HOME/%s/%s/gemini\")\n" $profilesDir $profile -}}
-{{- else if eq $tool "gh" -}}
-{{ printf "      gh_profile_enabled=1\n" -}}
-{{- else if eq $tool "git" -}}
-{{ printf "      git_profile_enabled=1\n" -}}
-{{- end -}}
-{{- end -}}
-{{ printf "      ;;\n" -}}
-{{- end -}}
-{{- end -}}
-{{ printf "    *) ;;\n  esac\n" }}
+    {{- range $profile, $config := $profiles -}}
+      {{- $tools := $config -}}
+      {{- if not (kindIs "slice" $config) -}}
+        {{- $tools = index $config "tools" -}}
+      {{- end -}}
+      {{- if has "vscode" $tools -}}
+        {{- printf "    \"%s\")\n" $profile -}}
+        {{- range $tool := $tools -}}
+          {{- if eq $tool "codex" -}}
+            {{- printf "      profile_env+=(\"CODEX_HOME=$HOME/%s/%s/codex\")\n" $profilesDir $profile -}}
+          {{- else if eq $tool "claude" -}}
+            {{- printf "      profile_env+=(\"CLAUDE_CONFIG_DIR=$HOME/%s/%s/claude\")\n" $profilesDir $profile -}}
+          {{- else if eq $tool "copilot" -}}
+            {{- printf "      profile_env+=(\"COPILOT_HOME=$HOME/%s/%s/copilot\")\n" $profilesDir $profile -}}
+          {{- else if eq $tool "gemini" -}}
+            {{- printf "      profile_env+=(\"GEMINI_CLI_HOME=$HOME/%s/%s/gemini\")\n" $profilesDir $profile -}}
+          {{- else if eq $tool "gh" -}}
+            {{- printf "      gh_profile_enabled=1\n" -}}
+          {{- else if eq $tool "git" -}}
+            {{- printf "      git_profile_enabled=1\n" -}}
+          {{- end -}}
+        {{- end -}}
+        {{- printf "      ;;\n" -}}
+      {{- end -}}
+    {{- end -}}
+    {{- printf "    *) ;;\n  esac\n" }}
 
   # VS Code inherits the first running instance's environment; quit it before switching profiles.
   if (( gh_profile_enabled || git_profile_enabled )); then
@@ -243,7 +274,7 @@ profile-use-vscode() {
       if (( gh_profile_enabled )); then
         profile-gh-switch "$profile" || return $?
       fi
-      profile-git-config "$profile" "$gh_profile_enabled"
+      profile-git-config "$profile" "$git_profile_enabled"
       if [[ "$vscode_profile" == "Default" ]]; then
         profile-clear-environment
       fi
@@ -280,6 +311,7 @@ profile-use-cli() {
   if [[ "$tool" == gh ]]; then
     (
       profile-gh-switch "$profile" || return $?
+      profile-git-config "$profile" 0
       command gh "$@"
     )
     return $?

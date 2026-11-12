@@ -38,32 +38,40 @@ alias c="claude"
 {{- $profiles := (index . "profiles") | default dict }}
 {{- if $profiles }}
 alias dotfiles='profile-use vscode Default "$(dirname "$(chezmoi source-path)")"'
-{{- with (index . "defaultProfile") }}
-{{- $defaultProfile := . }}
-{{- if eq $defaultProfile "Default" }}
+  {{- with (index . "defaultProfile") }}
+    {{- $defaultProfile := . }}
+    {{- if eq $defaultProfile "Default" }}
 alias code='profile-use vscode Default'
-{{- else }}
-{{- $config := index $profiles $defaultProfile }}
-{{- if not $config }}{{ fail (printf "default profile %q is not configured" $defaultProfile) }}{{ end }}
-{{- $tools := $config }}
-{{- if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
-{{- if not (has "vscode" $tools) }}{{ fail (printf "default profile %q must enable vscode" $defaultProfile) }}{{ end }}
+{{ "\n" -}}
+    {{- else }}
+      {{- $config := index $profiles $defaultProfile }}
+      {{- if not $config }}
+        {{- fail (printf "default profile %q is not configured" $defaultProfile) }}
+      {{- end }}
+      {{- $tools := $config }}
+      {{- if not (kindIs "slice" $config) }}
+        {{- $tools = index $config "tools" }}
+      {{- end }}
+      {{- if not (has "vscode" $tools) }}
+        {{- fail (printf "default profile %q must enable vscode" $defaultProfile) }}
+      {{- end }}
 alias code='profile-use vscode {{ $defaultProfile }}'
-{{- end }}
-{{- end }}
-{{- range $profile, $config := $profiles -}}
-{{ $tools := $config }}
-{{ if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
-{{ range $tool := $tools -}}
-{{ if eq $tool "vscode" -}}
+    {{- end }}
+  {{- end }}
+  {{- range $profile, $config := $profiles -}}
+    {{- $tools := $config -}}
+    {{- if not (kindIs "slice" $config) -}}
+      {{- $tools = index $config "tools" -}}
+    {{- end -}}
+    {{- range $tool := $tools -}}
+      {{- if eq $tool "vscode" -}}
 alias code-{{ $profile }}='profile-use vscode {{ $profile }}'
 alias dotfiles-{{ $profile }}='profile-use vscode {{ $profile }} "$(dirname "$(chezmoi source-path)")"'
-{{ else if eq $tool "antigravity" -}}
-{{ else if eq $tool "gh" -}}
-{{ else if eq $tool "git" -}}
-{{ else -}}
+{{ "\n" -}}
+      {{- else if not (or (eq $tool "antigravity") (eq $tool "gh") (eq $tool "git")) -}}
 alias {{ $tool }}-{{ $profile }}='profile-use {{ $tool }} {{ $profile }}'
-{{ end -}}
-{{ end -}}
-{{ end -}}
+{{ "\n" -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
 {{- end }}
