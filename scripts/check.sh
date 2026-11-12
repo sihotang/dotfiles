@@ -22,6 +22,9 @@ cmp -s examples/.chezmoidata/profiles.yaml.example "$tmpdir/data-bootstrap-sourc
 grep -Fx 'profiles:' "$tmpdir/data-bootstrap-source/home/.chezmoidata/profiles.yaml" > /dev/null
 "$CHEZMOI" --source "$tmpdir/data-bootstrap-source" --config "$tmpdir/chezmoi.toml" data --format=json > "$tmpdir/data-bootstrap.json"
 python3 -c 'import json,sys; data=json.load(open(sys.argv[1])); profiles=data["profiles"]; assert isinstance(data["ai"]["instructions"], str) and "personal" in profiles; assert profiles["personal"]["ai"]["force"] is False and isinstance(profiles["personal"]["ai"]["instructions"], str); assert profiles["personal"]["codex"]["force"] is False; assert profiles["work"]["ai"]["force"] is True and profiles["work"]["codex"]["force"] is False' "$tmpdir/data-bootstrap.json"
+"$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"name":"Your Name","email":"you@example.com"}' cat ~/.gitconfig > "$tmpdir/gitconfig"
+grep -Fx '    name = "Your Name"' "$tmpdir/gitconfig" > /dev/null
+grep -Fx '    email = "you@example.com"' "$tmpdir/gitconfig" > /dev/null
 printf '%s\n' 'Keep existing local data' > "$tmpdir/data-bootstrap-source/home/.chezmoidata/ai.yaml"
 sh "$tmpdir/data-bootstrap-source/scripts/copy-example-data.sh" "$tmpdir/data-bootstrap-source" > /dev/null
 grep -Fx 'Keep existing local data' "$tmpdir/data-bootstrap-source/home/.chezmoidata/ai.yaml" > /dev/null
