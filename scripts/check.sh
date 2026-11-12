@@ -6,7 +6,8 @@ set -eu
 CHEZMOI=${CHEZMOI:-chezmoi}
 CHEZMOI_SOURCE=${CHEZMOI_SOURCE:-$PWD}
 PROFILE_TEST_DATA='{"defaultProfile":"Default","profiles":{"default":{"tools":["codex","vscode"],"displayName":"Default"},"review":{"tools":["codex","gh","git","vscode"],"displayName":"Review Profile","name":"Profile User","email":"profile@example.test","git":{"name":"Review User","email":"review@example.test"}},"git_only":{"tools":["git","vscode"],"email":"git-only@example.test"}}}'
-PROFILE_INSTRUCTION_TEST_DATA='{"profiles":{"instructions":"All profile base","additionalInstructions":"All profile addendum","inherit":{"tools":["codex"]},"empty_profile":{"tools":["codex"],"instructions":"","additionalInstructions":""},"empty_tool":{"tools":["codex"],"instructions":"Parent profile base","additionalInstructions":"Parent profile addendum","codex":{"instructions":"","additionalInstructions":""}},"specific":{"tools":["codex"],"instructions":"Specific\u0027s base","additionalInstructions":"Specific addendum"},"tool":{"tools":["codex"],"instructions":"Profile base","additionalInstructions":"Profile addendum","codex":{"instructions":"Tool base","additionalInstructions":"Tool addendum"}}}}'
+PROFILE_INSTRUCTION_TEST_DATA='{"profiles":{"instructions":"All profile base","inherit":{"tools":["codex"]},"empty_profile":{"tools":["codex"],"instructions":""},"empty_tool":{"tools":["codex"],"instructions":"Parent profile base","codex":{"instructions":""}},"specific":{"tools":["codex"],"instructions":"Specific\u0027s base"},"tool":{"tools":["codex"],"instructions":"Profile base","codex":{"force":true,"instructions":"Tool replacement"}}}}'
+PROFILE_FORCE_TEST_DATA='{"profiles":{"instructions":"Global base","ai_append":{"tools":["codex"],"instructions":"Profile base","ai":{"force":false,"instructions":"AI append"},"codex":{"force":false,"instructions":"Codex append"}},"ai_default":{"tools":["codex"],"ai":{"instructions":"AI default append"}},"ai_force":{"tools":["codex"],"instructions":"Profile base","ai":{"force":true,"instructions":"AI replacement"}},"tool_force_false":{"tools":["codex"],"instructions":"Profile base","codex":{"force":false,"instructions":"Tool append"}},"tool_default":{"tools":["codex"],"instructions":"Tool parent base","codex":{"instructions":"Tool default append"}},"tool_force_true":{"tools":["codex"],"instructions":"Profile base","codex":{"force":true,"instructions":"Tool replacement"}}}}'
 
 tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
@@ -20,7 +21,7 @@ cmp -s examples/.chezmoidata/ai.yaml.example "$tmpdir/data-bootstrap-source/home
 cmp -s examples/.chezmoidata/profiles.yaml.example "$tmpdir/data-bootstrap-source/home/.chezmoidata/profiles.yaml"
 grep -Fx 'profiles:' "$tmpdir/data-bootstrap-source/home/.chezmoidata/profiles.yaml" > /dev/null
 "$CHEZMOI" --source "$tmpdir/data-bootstrap-source" --config "$tmpdir/chezmoi.toml" data --format=json > "$tmpdir/data-bootstrap.json"
-python3 -c 'import json,sys; data=json.load(open(sys.argv[1])); assert isinstance(data["ai"]["instructions"], str) and "personal" in data["profiles"]' "$tmpdir/data-bootstrap.json"
+python3 -c 'import json,sys; data=json.load(open(sys.argv[1])); profiles=data["profiles"]; assert isinstance(data["ai"]["instructions"], str) and "personal" in profiles; assert profiles["personal"]["ai"]["force"] is False and isinstance(profiles["personal"]["ai"]["instructions"], str); assert profiles["personal"]["codex"]["force"] is False; assert profiles["work"]["ai"]["force"] is True and profiles["work"]["codex"]["force"] is False' "$tmpdir/data-bootstrap.json"
 printf '%s\n' 'Keep existing local data' > "$tmpdir/data-bootstrap-source/home/.chezmoidata/ai.yaml"
 sh "$tmpdir/data-bootstrap-source/scripts/copy-example-data.sh" "$tmpdir/data-bootstrap-source" > /dev/null
 grep -Fx 'Keep existing local data' "$tmpdir/data-bootstrap-source/home/.chezmoidata/ai.yaml" > /dev/null
@@ -34,21 +35,44 @@ python3 -c 'import pathlib,sys; text=pathlib.Path(sys.argv[1]).read_text().repla
 sh -n "$tmpdir/profile-instruction-setup-isolated.sh"
 sh "$tmpdir/profile-instruction-setup-isolated.sh"
 grep -Fx 'All profile base' "$tmpdir/profile-instruction-home/.config/profiles/inherit/codex/AGENTS.md" > /dev/null
-grep -Fx 'All profile addendum' "$tmpdir/profile-instruction-home/.config/profiles/inherit/codex/AGENTS.md" > /dev/null
 grep -Fx "Specific's base" "$tmpdir/profile-instruction-home/.config/profiles/specific/codex/AGENTS.md" > /dev/null
-grep -Fx 'All profile addendum' "$tmpdir/profile-instruction-home/.config/profiles/specific/codex/AGENTS.md" > /dev/null
-grep -Fx 'Specific addendum' "$tmpdir/profile-instruction-home/.config/profiles/specific/codex/AGENTS.md" > /dev/null
-grep -Fx 'Tool base' "$tmpdir/profile-instruction-home/.config/profiles/tool/codex/AGENTS.md" > /dev/null
-grep -Fx 'Tool addendum' "$tmpdir/profile-instruction-home/.config/profiles/tool/codex/AGENTS.md" > /dev/null
-! grep -E 'All profile|Profile base|Profile addendum' "$tmpdir/profile-instruction-home/.config/profiles/tool/codex/AGENTS.md" > /dev/null
+grep -Fx 'Tool replacement' "$tmpdir/profile-instruction-home/.config/profiles/tool/codex/AGENTS.md" > /dev/null
+mkdir -p "$tmpdir/profile-force-home/.codex"
+printf '%s\n' 'Shared agent baseline' > "$tmpdir/profile-force-home/.codex/AGENTS.md"
+"$CHEZMOI" --source "$tmpdir/profile-instruction-source" --config "$tmpdir/chezmoi.toml" --override-data "$PROFILE_FORCE_TEST_DATA" execute-template --file "$tmpdir/profile-instruction-source/home/.chezmoiscripts/setup.tmpl" > "$tmpdir/profile-force-setup.sh"
+python3 -c 'import pathlib,sys; text=pathlib.Path(sys.argv[1]).read_text().replace("$HOME", sys.argv[2]); pathlib.Path(sys.argv[3]).write_text(text)' "$tmpdir/profile-force-setup.sh" "$tmpdir/profile-force-home" "$tmpdir/profile-force-setup-isolated.sh"
+sh -n "$tmpdir/profile-force-setup-isolated.sh"
+sh "$tmpdir/profile-force-setup-isolated.sh"
+grep -Fx 'Profile base' "$tmpdir/profile-force-home/.config/profiles/ai_append/codex/AGENTS.md" > /dev/null
+grep -Fx 'AI append' "$tmpdir/profile-force-home/.config/profiles/ai_append/codex/AGENTS.md" > /dev/null
+grep -Fx 'Codex append' "$tmpdir/profile-force-home/.config/profiles/ai_append/codex/AGENTS.md" > /dev/null
+grep -Fx 'Global base' "$tmpdir/profile-force-home/.config/profiles/ai_default/codex/AGENTS.md" > /dev/null
+grep -Fx 'AI default append' "$tmpdir/profile-force-home/.config/profiles/ai_default/codex/AGENTS.md" > /dev/null
+grep -Fx 'AI replacement' "$tmpdir/profile-force-home/.config/profiles/ai_force/codex/AGENTS.md" > /dev/null
+! grep -E 'Global base|Profile base' "$tmpdir/profile-force-home/.config/profiles/ai_force/codex/AGENTS.md" > /dev/null
+grep -Fx 'Profile base' "$tmpdir/profile-force-home/.config/profiles/tool_force_false/codex/AGENTS.md" > /dev/null
+grep -Fx 'Tool append' "$tmpdir/profile-force-home/.config/profiles/tool_force_false/codex/AGENTS.md" > /dev/null
+grep -Fx 'Tool parent base' "$tmpdir/profile-force-home/.config/profiles/tool_default/codex/AGENTS.md" > /dev/null
+grep -Fx 'Tool default append' "$tmpdir/profile-force-home/.config/profiles/tool_default/codex/AGENTS.md" > /dev/null
+grep -Fx 'Tool replacement' "$tmpdir/profile-force-home/.config/profiles/tool_force_true/codex/AGENTS.md" > /dev/null
+! grep -E 'Global base|Profile base' "$tmpdir/profile-force-home/.config/profiles/tool_force_true/codex/AGENTS.md" > /dev/null
+if "$CHEZMOI" --source "$tmpdir/profile-instruction-source" --config "$tmpdir/chezmoi.toml" --override-data '{"profiles":{"bad":{"tools":["codex"],"ai":{"force":"false","instructions":"Invalid force"}}}}' execute-template --file "$tmpdir/profile-instruction-source/home/.chezmoiscripts/setup.tmpl" > "$tmpdir/invalid-force-output" 2>&1; then
+  printf '%s\n' 'Invalid AI force value was accepted.' >&2
+  exit 1
+fi
+grep -F 'must be a boolean' "$tmpdir/invalid-force-output" > /dev/null
+if "$CHEZMOI" --source "$tmpdir/profile-instruction-source" --config "$tmpdir/chezmoi.toml" --override-data '{"profiles":{"bad":{"tools":["codex"],"codex":{"force":"false","instructions":"Invalid force"}}}}' execute-template --file "$tmpdir/profile-instruction-source/home/.chezmoiscripts/setup.tmpl" > "$tmpdir/invalid-tool-force-output" 2>&1; then
+  printf '%s\n' 'Invalid tool force value was accepted.' >&2
+  exit 1
+fi
+grep -F 'must be a boolean' "$tmpdir/invalid-tool-force-output" > /dev/null
 grep -Fx 'All profile base' "$tmpdir/profile-instruction-home/.config/profiles/empty_profile/codex/AGENTS.md" > /dev/null
-grep -Fx 'All profile addendum' "$tmpdir/profile-instruction-home/.config/profiles/empty_profile/codex/AGENTS.md" > /dev/null
 grep -Fx 'Parent profile base' "$tmpdir/profile-instruction-home/.config/profiles/empty_tool/codex/AGENTS.md" > /dev/null
-grep -Fx 'All profile addendum' "$tmpdir/profile-instruction-home/.config/profiles/empty_tool/codex/AGENTS.md" > /dev/null
-grep -Fx 'Parent profile addendum' "$tmpdir/profile-instruction-home/.config/profiles/empty_tool/codex/AGENTS.md" > /dev/null
 mkdir -p "$tmpdir/empty-profile-home/.codex"
 printf '%s\n' 'Shared agent baseline' > "$tmpdir/empty-profile-home/.codex/AGENTS.md"
-"$CHEZMOI" --source "$tmpdir/profile-instruction-source" --config "$tmpdir/chezmoi.toml" --override-data '{"profiles":{"instructions":"","additionalInstructions":"","empty":{"tools":["codex"]}}}' execute-template --file "$tmpdir/profile-instruction-source/home/.chezmoiscripts/setup.tmpl" > "$tmpdir/empty-profile-setup.sh"
+mkdir -p "$tmpdir/empty-profile-home/.config/profiles/empty/codex"
+printf '%s\n' '<!-- Managed by chezmoi; edit profiles.toml instead. -->' 'Old generated instructions' > "$tmpdir/empty-profile-home/.config/profiles/empty/codex/AGENTS.md"
+"$CHEZMOI" --source "$tmpdir/profile-instruction-source" --config "$tmpdir/chezmoi.toml" --override-data '{"profiles":{"instructions":"","empty":{"tools":["codex"]}}}' execute-template --file "$tmpdir/profile-instruction-source/home/.chezmoiscripts/setup.tmpl" > "$tmpdir/empty-profile-setup.sh"
 python3 -c 'import pathlib,sys; text=pathlib.Path(sys.argv[1]).read_text().replace("$HOME", sys.argv[2]); pathlib.Path(sys.argv[3]).write_text(text)' "$tmpdir/empty-profile-setup.sh" "$tmpdir/empty-profile-home" "$tmpdir/empty-profile-setup-isolated.sh"
 ! grep -F '/Users/sio' "$tmpdir/empty-profile-setup-isolated.sh" > /dev/null
 sh -n "$tmpdir/empty-profile-setup-isolated.sh"
