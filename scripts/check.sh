@@ -207,10 +207,14 @@ test ! -s "$tmpdir/non-windows-oh-my-zsh.ps1"
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"chezmoi":{"os":"windows"}}' execute-template --file home/.chezmoiscripts/run_onchange_after_install-mise-tools.sh.tmpl > "$tmpdir/windows-mise-tools.sh"
 test ! -s "$tmpdir/windows-mise-tools.sh"
 if command -v pwsh >/dev/null 2>&1; then
-  pwsh -NoProfile -Command '$tokens=$null; $errors=$null; [System.Management.Automation.Language.Parser]::ParseFile($args[0], [ref]$tokens, [ref]$errors) > $null; if ($errors.Count) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }' "$tmpdir/windows-packages.ps1"
-  pwsh -NoProfile -Command '$tokens=$null; $errors=$null; [System.Management.Automation.Language.Parser]::ParseFile($args[0], [ref]$tokens, [ref]$errors) > $null; if ($errors.Count) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }' "$tmpdir/windows-mise-tools.ps1"
-  pwsh -NoProfile -Command '$tokens=$null; $errors=$null; [System.Management.Automation.Language.Parser]::ParseFile($args[0], [ref]$tokens, [ref]$errors) > $null; if ($errors.Count) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }' "$tmpdir/windows-zsh.ps1"
-  pwsh -NoProfile -Command '$tokens=$null; $errors=$null; [System.Management.Automation.Language.Parser]::ParseFile($args[0], [ref]$tokens, [ref]$errors) > $null; if ($errors.Count) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }' "$tmpdir/windows-oh-my-zsh.ps1"
+  for powershell_file in \
+    "$tmpdir/windows-packages.ps1" \
+    "$tmpdir/windows-mise-tools.ps1" \
+    "$tmpdir/windows-zsh.ps1" \
+    "$tmpdir/windows-oh-my-zsh.ps1"
+  do
+    CHEZMOI_CHECK_FILE="$powershell_file" pwsh -NoProfile -Command '$tokens=$null; $errors=$null; [System.Management.Automation.Language.Parser]::ParseFile($env:CHEZMOI_CHECK_FILE, [ref]$tokens, [ref]$errors) > $null; if ($errors.Count) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }'
+  done
 fi
 for os in linux darwin windows; do
   "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data "{\"chezmoi\":{\"os\":\"$os\"}}" execute-template --file home/.chezmoiscripts/linux/run_after_sync-vscode-wsl-settings.sh.tmpl > "$tmpdir/vscode-wsl-settings-$os.sh"
