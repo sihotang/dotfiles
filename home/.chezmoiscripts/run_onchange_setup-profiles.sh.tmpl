@@ -1,4 +1,5 @@
 #!/bin/sh
+# VS Code profile setup checksum: {{ include "../scripts/configure-vscode-profiles.py" | sha256sum }}
 {{ $profilesDir := (index . "profilesDir") | default ".config/profiles" -}}
 {{- $profiles := (index . "profiles") | default dict -}}
 {{- $vscodeProfiles := list -}}
@@ -17,7 +18,9 @@
       {{- if not (kindIs "slice" $config) -}}
         {{- $name = index $config "name" | default $profile | printf "%v" -}}
       {{- end -}}
-      {{- $vscodeProfiles = append $vscodeProfiles (dict "id" $profile "name" $name) -}}
+      {{- $configDir := printf "%s/%s" $profilesDir $profile -}}
+      {{- $instructionLocations := includeTemplate "vscode/settings-profile.json" (dict "configDir" $configDir) | fromJson -}}
+      {{- $vscodeProfiles = append $vscodeProfiles (dict "id" $profile "name" $name "instructionLocations" $instructionLocations) -}}
     {{- end -}}
   {{- end -}}
 {{- end -}}
