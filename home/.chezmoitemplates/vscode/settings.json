@@ -48,6 +48,7 @@
 		"*.yaml.example": "yaml",
 		"*.yaml.tmpl": "go-template"
 	},
+	"git.autofetch": true,
 	"gitlens.graph.details.location": "auto",
 	"go-template.languages": ["json", "yaml"],
 	"makefile.configureOnOpen": true,
@@ -75,6 +76,7 @@
 		"editor.defaultFormatter",
 		"editor.formatOnSave",
 		"files.associations",
+		"git.autofetch",
 		"go-template.languages",
 		"gitlens.graph.details.location",
 		"makefile.configureOnOpen",
