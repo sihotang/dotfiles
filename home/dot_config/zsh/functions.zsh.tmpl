@@ -273,6 +273,9 @@ profile-use-vscode() {
     (
       if (( gh_profile_enabled )); then
         profile-gh-switch "$profile" || return $?
+      else
+        profile-clear-gh-environment
+        unset GH_CONFIG_DIR
       fi
       profile-git-config "$profile" "$git_profile_enabled"
       if [[ "$vscode_profile" == "Default" ]]; then
@@ -282,11 +285,16 @@ profile-use-vscode() {
     )
   elif [[ "$vscode_profile" == "Default" ]]; then
     (
+      profile-clear-gh-environment
       profile-clear-environment
       command env "${profile_env[@]}" code --profile "$vscode_profile" "$@"
     )
   else
-    command env "${profile_env[@]}" code --profile "$vscode_profile" "$@"
+    (
+      profile-clear-gh-environment
+      unset GH_CONFIG_DIR
+      command env "${profile_env[@]}" code --profile "$vscode_profile" "$@"
+    )
   fi
 }
 

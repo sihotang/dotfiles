@@ -321,6 +321,9 @@ environment overrides do not take precedence over the selected account.
 When the profile also enables `git`, the alias passes its Git identity to Git
 subprocesses launched by that GH command. If the profile enables only one
 tool, the alias switches only that tool.
+When a VS Code profile does not enable `gh`, its launcher clears inherited
+GitHub CLI environment overrides without switching accounts, so `gh` uses the
+currently selected account from the shared global configuration.
 GitHub CLI may store credentials in the operating system credential manager.
 See the [gh environment variable reference](https://cli.github.com/manual/gh_help_environment).
 
@@ -349,8 +352,8 @@ VS Code 1.116 and newer include GitHub Copilot, so setup relies on the built-in
 extension. Older versions install GitHub Copilot and GitHub Copilot Chat in the
 Default profile and each configured VS Code profile using the `code` CLI. The
 CLI must be available on `PATH`; older versions need Marketplace access.
-Managed VS Code settings set `chat.disableAIFeatures` to `false` and apply it
-to all profiles, keeping built-in Copilot features enabled across profiles.
+Managed VS Code settings enable chat agents and keep
+`chat.disableAIFeatures` set to `false` across all profiles.
 Start each profile with
 `code-<profile>` so VS Code starts with the matching CLI environment. The
 VS Code `Default` profile uses Codex's default home; other profiles with
