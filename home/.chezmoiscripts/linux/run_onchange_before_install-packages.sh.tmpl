@@ -30,6 +30,12 @@ install_linux_mise() {
   fi
 }
 
+install_linux_ollama() {
+  if ! command -v ollama >/dev/null 2>&1; then
+    curl -fsSL '{{ .packages.common.ollama.installer }}' | sh
+  fi
+}
+
 install_apt_packages() {
   run_root apt-get update
   run_root apt-get install -y {{ join " " $apt.system }}
@@ -201,4 +207,5 @@ else
 fi
 
 install_linux_mise
+install_linux_ollama
 {{ end -}}

@@ -137,13 +137,16 @@ Atuin settings live in
 `~/.config/atuin/config.toml`. The Zsh integration sets `ATUIN_CONFIG_DIR` to
 that Atuin directory. The existing `~/.atuin/config.toml` is left untouched.
 macOS installs Ghostty, Chrome, OrbStack, Cursor, Obsidian, and Visual Studio
-Code with Homebrew. Linux installs Ghostty when the distribution repository
-provides it; Debian-based systems install Chrome, Cursor, Obsidian, and Visual
-Studio Code, while DNF-based systems install Chrome, Cursor, and Visual Studio
-Code. WSL skips Linux desktop applications and uses GUI applications installed
-on the Windows host. OrbStack is macOS-only. Ghostty has no official Windows
-application. Native Windows installs Chrome, Cursor, Obsidian, and Visual
-Studio Code with WinGet.
+Code with Homebrew. Start Ollama's Homebrew service manually with
+`brew services run ollama` when needed. Linux installs Ghostty when the
+distribution repository provides it; Debian-based systems install Chrome,
+Cursor, Obsidian, and Visual Studio Code, while DNF-based systems install
+Chrome, Cursor, and Visual Studio Code. WSL skips Linux desktop applications
+and uses GUI applications installed on the Windows host. Ollama is installed
+with Homebrew on macOS, its official installer on Linux and WSL, and WinGet on
+native Windows. OrbStack is macOS-only. Ghostty has no official Windows
+application. Native Windows installs Chrome, Cursor, Obsidian, Ollama, and
+Visual Studio Code with WinGet.
 Neovim is installed with the platform package manager, and its configuration
 reuses the shared Vim settings at `~/.config/nvim/init.vim`.
 Visual Studio Code is installed with the platform package manager. Shared user

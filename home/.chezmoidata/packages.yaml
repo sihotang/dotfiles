@@ -20,12 +20,15 @@ packages:
         "npm:@github/copilot":
           version: latest
           bun_args: --trust
+    ollama:
+      installer: https://ollama.com/install.sh
   darwin:
     homebrew:
       formula:
         - gh
         - git
         - neovim
+        - ollama
         - zsh
       cask:
         - ghostty
@@ -89,6 +92,7 @@ packages:
       - Git.Git
       - GitHub.cli
       - Neovim.Neovim
+      - Ollama.Ollama
       - Microsoft.VisualStudioCode
       - Google.Chrome
       - Anysphere.Cursor

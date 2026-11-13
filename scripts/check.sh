@@ -191,13 +191,18 @@ grep -Fx '!packages.yaml' home/.chezmoidata/.gitignore > /dev/null
 grep -Fx 'atuin = "latest"' "$tmpdir/mise-config.toml" > /dev/null
 grep -Fx 'starship = "latest"' "$tmpdir/mise-config.toml" > /dev/null
 grep -F '"npm:@openai/codex" = "latest"' "$tmpdir/mise-config.toml" > /dev/null
+grep -F 'https://ollama.com/install.sh' home/.chezmoidata/packages.yaml > /dev/null
+grep -F '        - ollama' home/.chezmoidata/packages.yaml > /dev/null
+grep -F '      - Ollama.Ollama' home/.chezmoidata/packages.yaml > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"chezmoi":{"os":"linux"}}' execute-template --file home/.chezmoiscripts/linux/run_onchange_before_install-packages.sh.tmpl > "$tmpdir/linux-packages.sh"
 sh -n "$tmpdir/linux-packages.sh"
 grep -F 'apt-get install -y ca-certificates curl git gnupg neovim zsh' "$tmpdir/linux-packages.sh" > /dev/null
 grep -F 'pacman -S --needed --noconfirm' "$tmpdir/linux-packages.sh" > /dev/null
+grep -F 'https://ollama.com/install.sh' "$tmpdir/linux-packages.sh" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"chezmoi":{"os":"windows"}}' execute-template --file home/.chezmoiscripts/windows/run_onchange_before_install-packages.ps1.tmpl > "$tmpdir/windows-packages.ps1"
 test -s "$tmpdir/windows-packages.ps1"
 grep -F "'jdx.mise'" "$tmpdir/windows-packages.ps1" > /dev/null
+grep -F "'Ollama.Ollama'" "$tmpdir/windows-packages.ps1" > /dev/null
 grep -F "'Microsoft.VisualStudioCode'" "$tmpdir/windows-packages.ps1" > /dev/null
 grep -F "'Obsidian.Obsidian'" "$tmpdir/windows-packages.ps1" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"chezmoi":{"os":"windows"}}' execute-template --file home/.chezmoiscripts/windows/run_onchange_after_install-mise-tools.ps1.tmpl > "$tmpdir/windows-mise-tools.ps1"
@@ -239,6 +244,8 @@ grep -Fx '.config/ghostty/' "$tmpdir/ignore-windows" > /dev/null
 if [ -s "$tmpdir/darwin-packages.sh" ]; then
   sh -n "$tmpdir/darwin-packages.sh"
   grep -Fx 'brew cleanup --prune=all' "$tmpdir/darwin-packages.sh" > /dev/null
+  grep -Fx 'brew "ollama"' "$tmpdir/darwin-packages.sh" > /dev/null
+  ! grep -F 'brew services start ollama' "$tmpdir/darwin-packages.sh" > /dev/null
 fi
 grep -F '/.config/profiles"' "$tmpdir/setup-profiles.sh" > /dev/null
 ! grep -F 'code --profile' "$tmpdir/setup-profiles.sh" > /dev/null
