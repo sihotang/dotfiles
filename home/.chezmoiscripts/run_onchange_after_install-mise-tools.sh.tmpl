@@ -1,3 +1,4 @@
+{{ if or (eq .chezmoi.os "darwin") (eq .chezmoi.os "linux") -}}
 #!/bin/sh
 # mise config checksum: {{ include "dot_config/mise/config.toml" | sha256sum }}
 set -eu
@@ -9,3 +10,4 @@ elif [ -x "$HOME/.local/bin/mise" ]; then
   "$HOME/.local/bin/mise" install bun
   "$HOME/.local/bin/mise" exec bun -- "$HOME/.local/bin/mise" install
 fi
+{{ end -}}

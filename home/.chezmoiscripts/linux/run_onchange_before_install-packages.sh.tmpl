@@ -1,0 +1,174 @@
+{{ if eq .chezmoi.os "linux" -}}
+#!/bin/sh
+
+set -eu
+
+run_root() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+  elif command -v sudo >/dev/null 2>&1; then
+    sudo "$@"
+  else
+    printf '%s\n' 'Package installation needs root privileges; install sudo or run chezmoi apply as root.' >&2
+    exit 1
+  fi
+}
+
+is_wsl() {
+  [ -n "${WSL_DISTRO_NAME:-}" ] || {
+    [ -r /proc/sys/kernel/osrelease ] && grep -qi microsoft /proc/sys/kernel/osrelease
+  }
+}
+
+install_linux_mise() {
+  if ! command -v mise >/dev/null 2>&1 && [ ! -x "$HOME/.local/bin/mise" ]; then
+    curl -fsSL https://mise.run | sh
+  fi
+}
+
+install_apt_packages() {
+  run_root apt-get update
+  run_root apt-get install -y ca-certificates curl git gnupg neovim zsh
+
+  if ! command -v gh >/dev/null 2>&1; then
+    key_file=$(mktemp)
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o "$key_file"
+    run_root install -D -m 0644 "$key_file" /etc/apt/keyrings/githubcli-archive-keyring.gpg
+    rm -f "$key_file"
+    printf '%s\n' "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+      | run_root tee /etc/apt/sources.list.d/github-cli.list >/dev/null
+  fi
+
+  if ! is_wsl; then
+    install_linux_deb_apps
+  fi
+  run_root apt-get update
+  run_root apt-get install -y gh
+  if ! is_wsl && apt-cache show ghostty >/dev/null 2>&1; then
+    run_root apt-get install -y ghostty
+  fi
+}
+
+download_install_deb() {
+  package_url=$1
+  package_file="$temporary_directory/package.deb"
+  curl -fsSL "$package_url" -o "$package_file"
+  run_root apt-get install -y "$package_file"
+}
+
+install_linux_deb_apps() {
+  case "$(dpkg --print-architecture)" in
+    amd64) vscode_arch=x64; chrome_arch=amd64; obsidian_arch=x64 ;;
+    arm64) vscode_arch=arm64; chrome_arch=arm64; obsidian_arch=arm64 ;;
+    *) printf 'Unsupported Debian package architecture: %s\n' "$(dpkg --print-architecture)" >&2; exit 1 ;;
+  esac
+
+  temporary_directory=$(mktemp -d)
+  trap 'rm -rf "$temporary_directory"' EXIT HUP INT TERM
+  if ! command -v code >/dev/null 2>&1; then
+    download_install_deb "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-$vscode_arch"
+  fi
+  if ! command -v google-chrome >/dev/null 2>&1; then
+    download_install_deb "https://dl.google.com/linux/direct/google-chrome-stable_current_$chrome_arch.deb"
+  fi
+
+  if ! command -v cursor >/dev/null 2>&1; then
+    run_root mkdir -p /etc/apt/keyrings /etc/apt/sources.list.d
+    curl -fsSL https://downloads.cursor.com/keys/anysphere.asc -o "$temporary_directory/cursor.asc"
+    gpg --dearmor --output "$temporary_directory/cursor.gpg" "$temporary_directory/cursor.asc"
+    run_root install -m 0644 "$temporary_directory/cursor.gpg" /etc/apt/keyrings/cursor.gpg
+    printf '%s\n' "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/cursor.gpg] https://downloads.cursor.com/aptrepo stable main" \
+      | run_root tee /etc/apt/sources.list.d/cursor.list >/dev/null
+    run_root apt-get update
+    run_root apt-get install -y cursor
+  fi
+
+  if ! command -v obsidian >/dev/null 2>&1; then
+    download_install_deb "https://obsidian.md/download?os=linux&arch=$obsidian_arch&package=deb"
+  fi
+}
+
+install_dnf_packages() {
+  run_root dnf install -y ca-certificates curl git neovim zsh
+  if ! command -v gh >/dev/null 2>&1; then
+    run_root mkdir -p /etc/yum.repos.d
+    run_root curl -fsSL https://cli.github.com/packages/rpm/gh-cli.repo -o /etc/yum.repos.d/gh-cli.repo
+  fi
+
+  if ! is_wsl; then
+    install_linux_rpm_apps
+  fi
+  run_root dnf install -y gh
+  if ! is_wsl && dnf repoquery --available ghostty 2>/dev/null | grep -q .; then
+    run_root dnf install -y ghostty
+  fi
+}
+
+download_install_rpm() {
+  package_url=$1
+  package_file="$temporary_directory/package.rpm"
+  curl -fsSL "$package_url" -o "$package_file"
+  run_root dnf install -y "$package_file"
+}
+
+install_linux_rpm_apps() {
+  case "$(uname -m)" in
+    x86_64) vscode_arch=x64; chrome_arch=x86_64 ;;
+    aarch64) vscode_arch=arm64; chrome_arch=aarch64 ;;
+    *) printf 'Unsupported RPM package architecture: %s\n' "$(uname -m)" >&2; exit 1 ;;
+  esac
+
+  temporary_directory=$(mktemp -d)
+  trap 'rm -rf "$temporary_directory"' EXIT HUP INT TERM
+  if ! command -v code >/dev/null 2>&1; then
+    download_install_rpm "https://code.visualstudio.com/sha/download?build=stable&os=linux-rpm-$vscode_arch"
+  fi
+  if ! command -v google-chrome >/dev/null 2>&1; then
+    download_install_rpm "https://dl.google.com/linux/direct/google-chrome-stable_current_$chrome_arch.rpm"
+  fi
+
+  if ! command -v cursor >/dev/null 2>&1; then
+    printf '%s\n' '[cursor]' 'name=Cursor' 'baseurl=https://downloads.cursor.com/yumrepo' 'enabled=1' 'gpgcheck=1' 'gpgkey=https://downloads.cursor.com/keys/anysphere.asc' \
+      | run_root tee /etc/yum.repos.d/cursor.repo >/dev/null
+    run_root dnf install -y cursor
+  fi
+}
+
+install_pacman_packages() {
+  if is_wsl; then
+    run_root pacman -S --needed --noconfirm ca-certificates curl git github-cli neovim zsh
+  else
+    run_root pacman -S --needed --noconfirm ca-certificates curl git github-cli ghostty neovim zsh
+  fi
+}
+
+install_zypper_packages() {
+  run_root zypper --non-interactive refresh
+  run_root zypper --non-interactive install ca-certificates curl git neovim zsh
+  if ! command -v gh >/dev/null 2>&1; then
+    if ! zypper repos | grep -Fq 'github-cli'; then
+      run_root zypper addrepo --refresh https://cli.github.com/packages/rpm/gh-cli.repo github-cli
+    fi
+  fi
+  run_root zypper --non-interactive refresh
+  run_root zypper --non-interactive install gh
+  if ! is_wsl && ! command -v ghostty >/dev/null 2>&1 && zypper search --match-exact --details ghostty 2>/dev/null | grep -q ghostty; then
+    run_root zypper --non-interactive install ghostty
+  fi
+}
+
+if command -v apt-get >/dev/null 2>&1; then
+  install_apt_packages
+elif command -v dnf >/dev/null 2>&1; then
+  install_dnf_packages
+elif command -v pacman >/dev/null 2>&1; then
+  install_pacman_packages
+elif command -v zypper >/dev/null 2>&1; then
+  install_zypper_packages
+else
+  printf '%s\n' 'Unsupported Linux package manager; supported: apt, dnf, pacman, zypper.' >&2
+  exit 1
+fi
+
+install_linux_mise
+{{ end -}}

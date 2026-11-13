@@ -182,6 +182,40 @@ grep -F 'profile-enabled() {' "$tmpdir/functions" > /dev/null
 ! grep -F 'ai-use() {' "$tmpdir/functions" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data "$PROFILE_TEST_DATA" execute-template --file home/.chezmoiscripts/run_onchange_setup-profiles.sh.tmpl > "$tmpdir/setup-profiles.sh"
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" execute-template --file home/.chezmoiscripts/darwin/run_onchange_before_install-packages.sh.tmpl > "$tmpdir/darwin-packages.sh"
+"$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"chezmoi":{"os":"linux"}}' execute-template --file home/.chezmoiscripts/linux/run_onchange_before_install-packages.sh.tmpl > "$tmpdir/linux-packages.sh"
+sh -n "$tmpdir/linux-packages.sh"
+grep -F 'apt-get install -y ca-certificates curl git gnupg neovim zsh' "$tmpdir/linux-packages.sh" > /dev/null
+grep -F 'pacman -S --needed --noconfirm' "$tmpdir/linux-packages.sh" > /dev/null
+"$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"chezmoi":{"os":"windows"}}' execute-template --file home/.chezmoiscripts/windows/run_onchange_before_install-packages.ps1.tmpl > "$tmpdir/windows-packages.ps1"
+test -s "$tmpdir/windows-packages.ps1"
+grep -F "'jdx.mise'" "$tmpdir/windows-packages.ps1" > /dev/null
+grep -F "'Microsoft.VisualStudioCode'" "$tmpdir/windows-packages.ps1" > /dev/null
+grep -F "'Obsidian.Obsidian'" "$tmpdir/windows-packages.ps1" > /dev/null
+"$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"chezmoi":{"os":"windows"}}' execute-template --file home/.chezmoiscripts/windows/run_onchange_after_install-mise-tools.ps1.tmpl > "$tmpdir/windows-mise-tools.ps1"
+grep -F 'exec bun --' "$tmpdir/windows-mise-tools.ps1" > /dev/null
+"$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"chezmoi":{"os":"windows"}}' execute-template --file home/.chezmoiscripts/windows/run_onchange_before_install-zsh.ps1.tmpl > "$tmpdir/windows-zsh.ps1"
+grep -F "'zsh,git,curl'" "$tmpdir/windows-zsh.ps1" > /dev/null
+grep -F 'db_shell' "$tmpdir/windows-zsh.ps1" > /dev/null
+grep -F '/bin/zsh' "$tmpdir/windows-zsh.ps1" > /dev/null
+"$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"chezmoi":{"os":"linux"}}' execute-template --file home/.chezmoiscripts/windows/run_onchange_before_install-zsh.ps1.tmpl > "$tmpdir/non-windows-zsh.ps1"
+test ! -s "$tmpdir/non-windows-zsh.ps1"
+"$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"chezmoi":{"os":"windows"}}' execute-template --file home/.chezmoiscripts/windows/run_onchange_after_install-oh-my-zsh.ps1.tmpl > "$tmpdir/windows-oh-my-zsh.ps1"
+grep -F 'https://install.ohmyz.sh/' "$tmpdir/windows-oh-my-zsh.ps1" > /dev/null
+grep -F -- '--unattended' "$tmpdir/windows-oh-my-zsh.ps1" > /dev/null
+"$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"chezmoi":{"os":"linux"}}' execute-template --file home/.chezmoiscripts/windows/run_onchange_after_install-oh-my-zsh.ps1.tmpl > "$tmpdir/non-windows-oh-my-zsh.ps1"
+test ! -s "$tmpdir/non-windows-oh-my-zsh.ps1"
+"$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"chezmoi":{"os":"windows"}}' execute-template --file home/.chezmoiscripts/run_onchange_after_install-mise-tools.sh.tmpl > "$tmpdir/windows-mise-tools.sh"
+test ! -s "$tmpdir/windows-mise-tools.sh"
+if command -v pwsh >/dev/null 2>&1; then
+  for powershell_file in \
+    "$tmpdir/windows-packages.ps1" \
+    "$tmpdir/windows-mise-tools.ps1" \
+    "$tmpdir/windows-zsh.ps1" \
+    "$tmpdir/windows-oh-my-zsh.ps1"
+  do
+    CHEZMOI_CHECK_FILE="$powershell_file" pwsh -NoProfile -Command '$tokens=$null; $errors=$null; [System.Management.Automation.Language.Parser]::ParseFile($env:CHEZMOI_CHECK_FILE, [ref]$tokens, [ref]$errors) > $null; if ($errors.Count) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }'
+  done
+fi
 for os in linux darwin windows; do
   "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data "{\"chezmoi\":{\"os\":\"$os\"}}" execute-template --file home/.chezmoiscripts/linux/run_after_sync-vscode-wsl-settings.sh.tmpl > "$tmpdir/vscode-wsl-settings-$os.sh"
 done
@@ -189,6 +223,10 @@ test -s "$tmpdir/vscode-wsl-settings-linux.sh"
 test ! -s "$tmpdir/vscode-wsl-settings-darwin.sh"
 test ! -s "$tmpdir/vscode-wsl-settings-windows.sh"
 sh -n "$tmpdir/vscode-wsl-settings-linux.sh"
+"$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"chezmoi":{"os":"windows"}}' execute-template --file home/.chezmoiignore.tmpl > "$tmpdir/ignore-windows"
+grep -Fx '.config/ghostty/' "$tmpdir/ignore-windows" > /dev/null
+"$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"chezmoi":{"os":"linux"}}' execute-template --file home/.chezmoiignore.tmpl > "$tmpdir/ignore-linux"
+! grep -Fx '.config/ghostty/' "$tmpdir/ignore-linux" > /dev/null
 if [ -s "$tmpdir/darwin-packages.sh" ]; then
   sh -n "$tmpdir/darwin-packages.sh"
   grep -Fx 'brew cleanup --prune=all' "$tmpdir/darwin-packages.sh" > /dev/null
