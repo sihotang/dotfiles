@@ -182,6 +182,13 @@ grep -F 'profile-enabled() {' "$tmpdir/functions" > /dev/null
 ! grep -F 'ai-use() {' "$tmpdir/functions" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data "$PROFILE_TEST_DATA" execute-template --file home/.chezmoiscripts/run_onchange_setup-profiles.sh.tmpl > "$tmpdir/setup-profiles.sh"
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" execute-template --file home/.chezmoiscripts/darwin/run_onchange_before_install-packages.sh.tmpl > "$tmpdir/darwin-packages.sh"
+for os in linux darwin windows; do
+  "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data "{\"chezmoi\":{\"os\":\"$os\"}}" execute-template --file home/.chezmoiscripts/linux/run_after_sync-vscode-wsl-settings.sh.tmpl > "$tmpdir/vscode-wsl-settings-$os.sh"
+done
+test -s "$tmpdir/vscode-wsl-settings-linux.sh"
+test ! -s "$tmpdir/vscode-wsl-settings-darwin.sh"
+test ! -s "$tmpdir/vscode-wsl-settings-windows.sh"
+sh -n "$tmpdir/vscode-wsl-settings-linux.sh"
 if [ -s "$tmpdir/darwin-packages.sh" ]; then
   sh -n "$tmpdir/darwin-packages.sh"
   grep -Fx 'brew cleanup --prune=all' "$tmpdir/darwin-packages.sh" > /dev/null
@@ -207,16 +214,67 @@ grep -Fx -- '--install-extension GitHub.copilot' "$tmpdir/vscode-install.log" > 
 printf '%s\n' '[{"id":"review","name":"Review Profile"}]' | CHEZMOI_PROFILE_SETUP_TESTING=1 CHEZMOI_VSCODE_PROFILE_STORAGE_PATH="$tmpdir/vscode-profile-storage/storage.json" CHEZMOI_VSCODE_CLI="$tmpdir/vscode-bin/code" CHEZMOI_VSCODE_TEST_VERSION=1.145.0 CHEZMOI_VSCODE_TEST_LOG="$tmpdir/vscode-builtin-install.log" python3 "$CHEZMOI_SOURCE/scripts/configure-vscode-profiles.py"
 test ! -s "$tmpdir/vscode-builtin-install.log"
 python3 -c 'import json,sys; data=json.load(open(sys.argv[1])); profiles=data["userDataProfiles"]; assert data["sentinel"] == "preserve"; assert len(profiles) >= 3; review=next(p for p in profiles if p["name"] == "Review Profile"); assert all(review["useDefaultFlags"][key] is True for key in ("settings","keybindings","tasks","mcp","snippets")); assert review["useDefaultFlags"]["extensions"] is False; assert any(p["name"] == "Unmanaged" for p in profiles); assert any(p["name"] == "git_only" for p in profiles); assert not any(p["name"] == "Default" for p in profiles)' "$tmpdir/vscode-profile-storage/storage.json"
+python3 - "$CHEZMOI_SOURCE/scripts/configure-vscode-profiles.py" "$tmpdir" <<'PY'
+import importlib.util
+import os
+import pathlib
+import sys
+from unittest import mock
+
+script, temp = sys.argv[1:]
+spec = importlib.util.spec_from_file_location("configure_vscode_profiles", script)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+# Portable installs keep their user data beside the CLI.
+portable = pathlib.Path(temp) / "portable"
+(portable / "bin").mkdir(parents=True)
+(portable / "data" / "user-data").mkdir(parents=True)
+cli = portable / "bin" / "code"
+cli.touch()
+assert module.storage_path(str(cli)) == (
+    portable.resolve() / "data" / "user-data" / "User" / "globalStorage" / "storage.json"
+)
+
+# WSL launching Windows VS Code must use Windows APPDATA, converted to WSL form.
+windows_cli = "/mnt/c/Program Files/Microsoft VS Code/bin/code"
+appdata = pathlib.Path(temp) / "windows-appdata"
+with mock.patch.object(module, "is_wsl", return_value=True), mock.patch.object(
+    module, "windows_appdata_from_wsl", return_value=appdata
+), mock.patch.dict(os.environ, {"CHEZMOI_VSCODE_VARIANT": "insiders"}):
+    assert module.storage_path(windows_cli) == (
+        appdata / "Code - Insiders" / "User" / "globalStorage" / "storage.json"
+    )
+
+# Native Linux stable and OSS variants honor XDG_CONFIG_HOME.
+config_home = pathlib.Path(temp) / "xdg"
+with mock.patch.object(module, "is_wsl", return_value=False), mock.patch.object(
+    module.sys, "platform", "linux"
+), mock.patch.dict(os.environ, {"XDG_CONFIG_HOME": str(config_home)}, clear=False):
+    assert module.storage_path("/usr/bin/code") == (
+        config_home / "Code" / "User" / "globalStorage" / "storage.json"
+    )
+    assert module.storage_path("/usr/bin/code-oss") == (
+        config_home / "Code - OSS" / "User" / "globalStorage" / "storage.json"
+    )
+PY
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"profiles":null}' execute-template --file home/.chezmoiscripts/run_onchange_setup-profiles.sh.tmpl > "$tmpdir/setup-profiles-empty.sh"
 grep -F 'cli_auth_credentials_store = "file"' "$tmpdir/setup-profiles.sh" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" cat ~/.gemini/settings.json > "$tmpdir/gemini-settings.json"
 mkdir -p "$tmpdir/bin"
 printf '%s\n' '#!/bin/sh' '[ "$#" -eq 2 ] && [ "$1" = which ] && [ "$2" = rg ] || exit 1' 'printf "%s\n" "/mise-test/ripgrep/rg"' > "$tmpdir/bin/mise"
-printf '%s\n' '#!/bin/sh' '[ "$#" -eq 2 ] && [ "$1" = --locate-extension ] && [ "$2" = continue.continue ] || exit 1' 'printf "%s\n" "/mise-test/vscode/extensions/continue.continue"' > "$tmpdir/bin/code"
+printf '%s\n' '#!/bin/sh' '[ "$#" -eq 2 ] && [ "$1" = --locate-extension ] && [ "$2" = continue.continue ] || exit 1' 'printf "%s\n" "${CHEZMOI_VSCODE_TEST_EXTENSION_PATH:-/mise-test/vscode/extensions/continue.continue}"' > "$tmpdir/bin/code"
 chmod +x "$tmpdir/bin/mise" "$tmpdir/bin/code"
 PATH="$tmpdir/bin:$PATH" "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" execute-template --file 'home/private_Library/private_Application Support/private_Code/User/settings.json.tmpl' > "$tmpdir/vscode-settings.json"
 python3 -m json.tool "$tmpdir/vscode-settings.json" > /dev/null
 python3 -c 'import json,sys; settings=json.load(open(sys.argv[1])); keys=set(settings)-{"yaml.schemas","workbench.settings.applyToAllProfiles"}; assert keys == set(settings["workbench.settings.applyToAllProfiles"]), "VS Code managed settings must be shared across profiles"; assert settings["todo-tree.ripgrep.ripgrep"] == "/mise-test/ripgrep/rg", "VS Code ripgrep path must come from mise which rg"; assert "file:///mise-test/vscode/extensions/continue.continue/config-yaml-schema.json" in settings["yaml.schemas"], "Continue schema path must come from code --locate-extension"' "$tmpdir/vscode-settings.json"
+for template in 'home/dot_config/Code/User/settings.json.tmpl' 'home/AppData/Roaming/Code/User/settings.json.tmpl'; do
+  PATH="$tmpdir/bin:$PATH" "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" execute-template --file "$template" > "$tmpdir/vscode-platform-settings.json"
+  cmp -s "$tmpdir/vscode-settings.json" "$tmpdir/vscode-platform-settings.json"
+done
+CHEZMOI_VSCODE_TEST_EXTENSION_PATH='C:\Users\Jane Doe\.vscode\extensions\continue.continue' PATH="$tmpdir/bin:$PATH" "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" execute-template --file 'home/AppData/Roaming/Code/User/settings.json.tmpl' > "$tmpdir/vscode-windows-settings.json"
+python3 -m json.tool "$tmpdir/vscode-windows-settings.json" > /dev/null
+python3 -c 'import json,sys; settings=json.load(open(sys.argv[1])); assert "file:///C:/Users/Jane%20Doe/.vscode/extensions/continue.continue/config-yaml-schema.json" in settings["yaml.schemas"]' "$tmpdir/vscode-windows-settings.json"
 for file in home/dot_zprofile home/dot_zshrc "$tmpdir/aliases" "$tmpdir/aliases-no-profiles" "$tmpdir/exports" "$tmpdir/functions" "$tmpdir/functions-no-profiles" "$tmpdir/integrations" "$tmpdir/integrations-no-profiles"; do
   zsh -n "$file"
 done
