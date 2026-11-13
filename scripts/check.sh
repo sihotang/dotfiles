@@ -5,7 +5,7 @@ set -eu
 
 CHEZMOI=${CHEZMOI:-chezmoi}
 CHEZMOI_SOURCE=${CHEZMOI_SOURCE:-$PWD}
-PROFILE_TEST_DATA='{"defaultProfile":"Default","profiles":{"default":{"tools":["codex","vscode"],"name":"Default"},"review":{"tools":["codex","gh","git","vscode"],"alias":"review-account","name":"Review Profile","email":"profile@example.test","git":{"name":"Review User","email":"review@example.test"},"gh":{"username":"review-user"}},"git_only":{"tools":["git","vscode"],"email":"git-only@example.test"},"gh-default":{"tools":["gh"],"alias":"fallback-login"},"gh-git-default":{"tools":["gh","git"],"alias":"custom-alias","git":{"name":"Fallback Git","email":"fallback@example.test"}}}}'
+PROFILE_TEST_DATA='{"defaultProfile":"Default","profiles":{"default":{"tools":["codex","vscode"],"name":"Default"},"review":{"tools":["codex","gh","git","vscode"],"alias":"review-account","name":"Review Profile","email":"profile@example.test","git":{"name":"Review User","email":"review@example.test"},"gh":{"username":"review-user"}},"git_only":{"tools":["git","vscode"],"email":"git-only@example.test"},"vscode_only":{"tools":["vscode"]},"gh-default":{"tools":["gh"],"alias":"fallback-login"},"gh-git-default":{"tools":["gh","git"],"alias":"custom-alias","git":{"name":"Fallback Git","email":"fallback@example.test"}}}}'
 NUMERIC_PROFILE_TEST_DATA='{"profiles":{"numeric":{"tools":["git","gh"],"alias":123,"name":123,"gh":{"username":"numeric-user"}}}}'
 PROFILE_INSTRUCTION_TEST_DATA='{"profiles":{"instructions":"All profile base","inherit":{"tools":["codex"]},"empty_profile":{"tools":["codex"],"instructions":""},"empty_tool":{"tools":["codex"],"instructions":"Parent profile base","codex":{"instructions":""}},"specific":{"tools":["codex"],"instructions":"Specific\u0027s base"},"tool":{"tools":["codex"],"instructions":"Profile base","codex":{"force":true,"instructions":"Tool replacement"}}}}'
 PROFILE_FORCE_TEST_DATA='{"profiles":{"instructions":"Global base","ai_append":{"tools":["codex"],"instructions":"Profile base","ai":{"force":false,"instructions":"AI append"},"codex":{"force":false,"instructions":"Codex append"}},"ai_default":{"tools":["codex"],"ai":{"instructions":"AI default append"}},"ai_force":{"tools":["codex"],"instructions":"Profile base","ai":{"force":true,"instructions":"AI replacement"}},"tool_force_false":{"tools":["codex"],"instructions":"Profile base","codex":{"force":false,"instructions":"Tool append"}},"tool_default":{"tools":["codex"],"instructions":"Tool parent base","codex":{"instructions":"Tool default append"}},"tool_force_true":{"tools":["codex"],"instructions":"Profile base","codex":{"force":true,"instructions":"Tool replacement"}}}}'
@@ -162,15 +162,20 @@ grep -F 'CODEX_HOME=$HOME/.config/profiles/default/codex' "$tmpdir/functions" > 
 grep -F 'git_config_parameters="${git_config_parameters}${git_config_parameters:+ }'\''user.name=Review User'\''"' "$tmpdir/functions" > /dev/null
 grep -F 'git_config_parameters="${git_config_parameters}${git_config_parameters:+ }'\''user.email=review@example.test'\''"' "$tmpdir/functions" > /dev/null
 GIT_CONFIG_COUNT=2 GIT_CONFIG_KEY_0=credential.helper GIT_CONFIG_KEY_1=credential.helper GIT_CONFIG_VALUE_1=stale zsh -c 'source "$1"; profile-git-config review; test -z "${GIT_CONFIG_VALUE_0+x}"; test "$(git config user.name)" = "Review User"; test "$(git config user.email)" = "review@example.test"; git config --get-all credential.helper | grep -Fx "!gh auth git-credential" > /dev/null' _ "$tmpdir/functions"
-printf '%s\n' '#!/bin/sh' 'printf "%s\n" "${GIT_CONFIG_PARAMETERS-}"' > "$tmpdir/profile-gh-bin/code"
+printf '%s\n' '#!/bin/sh' 'printf "%s\n" "${GIT_CONFIG_PARAMETERS-}" "${GH_CONFIG_DIR-}" "${GH_TOKEN-}"' > "$tmpdir/profile-gh-bin/code"
 chmod +x "$tmpdir/profile-gh-bin/code"
-PATH="$tmpdir/profile-gh-bin:$PATH" zsh -c 'source "$1"; profile-use vscode git_only' _ "$tmpdir/functions" > "$tmpdir/profile-vscode-git-only"
+PATH="$tmpdir/profile-gh-bin:$PATH" GH_CONFIG_DIR="$tmpdir/stale-gh-config" GH_TOKEN=stale-token zsh -c 'source "$1"; profile-use vscode git_only' _ "$tmpdir/functions" > "$tmpdir/profile-vscode-git-only"
 grep -F "'user.email=git-only@example.test'" "$tmpdir/profile-vscode-git-only" > /dev/null
 ! grep -F 'credential.helper' "$tmpdir/profile-vscode-git-only" > /dev/null
+test -z "$(sed -n '2p' "$tmpdir/profile-vscode-git-only")"
+test -z "$(sed -n '3p' "$tmpdir/profile-vscode-git-only")"
+PATH="$tmpdir/profile-gh-bin:$PATH" GH_CONFIG_DIR="$tmpdir/stale-gh-config" GH_TOKEN=stale-token zsh -c 'source "$1"; profile-use vscode vscode_only' _ "$tmpdir/functions" > "$tmpdir/profile-vscode-only"
+test -z "$(sed -n '2p' "$tmpdir/profile-vscode-only")"
+test -z "$(sed -n '3p' "$tmpdir/profile-vscode-only")"
 grep -F 'profile-clear-environment() {' "$tmpdir/functions" > /dev/null
 test "$(grep -F -c 'profile-clear-environment' "$tmpdir/functions")" -eq 3
 grep -F 'profile-clear-gh-environment() {' "$tmpdir/functions" > /dev/null
-test "$(grep -F -c 'profile-clear-gh-environment' "$tmpdir/functions")" -eq 2
+test "$(grep -F -c 'profile-clear-gh-environment' "$tmpdir/functions")" -eq 5
 ! grep -F 'unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN' "$tmpdir/functions" > /dev/null
 grep -F 'profile-enabled() {' "$tmpdir/functions" > /dev/null
 ! grep -F 'ai-profile-enabled' "$tmpdir/functions" > /dev/null
