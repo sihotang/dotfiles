@@ -125,10 +125,6 @@ extract() {
         {{- if not (kindIs "map" $ghConfig) }}
           {{- fail (printf "gh config for profile %q must be a table" $profile) }}
         {{- end }}
-        {{- $ghUsername := index $ghConfig "username" | default $profile }}
-        {{- if not (regexMatch "^[a-zA-Z0-9-]+$" $ghUsername) }}
-          {{- fail (printf "invalid GitHub username %q for profile %q" $ghUsername $profile) }}
-        {{- end }}
       {{- end }}
     {{- end }}
   {{- end }}
@@ -198,30 +194,17 @@ profile-clear-gh-environment() {
   unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN
 }
 
-# Switch the shared GitHub CLI configuration to the profile's stored account.
-profile-gh-switch() {
-  local profile="$1" username=''
-  case "$profile" in{{ "\n" -}}
-    {{- range $profile, $config := $profiles -}}
-      {{- $tools := $config -}}
-      {{- if not (kindIs "slice" $config) -}}
-        {{- $tools = index $config "tools" -}}
-      {{- end -}}
-      {{- if has "gh" $tools -}}
-        {{- $username := $profile -}}
-        {{- if kindIs "map" $config -}}
-          {{- $ghConfig := index $config "gh" | default dict -}}
-          {{- $username = index $ghConfig "username" | default $profile -}}
-        {{- end -}}
-        {{- printf "    %s) username=%s ;;\n" $profile ($username | quote) -}}
-      {{- end -}}
-    {{- end -}}
-    *) print -u2 "profile-use: GitHub account is not configured: $profile"; return 1 ;;
-  esac
+# Use the profile's isolated GitHub CLI configuration.
+profile-use-gh() {
+  local profile="$1" profile_dir="$HOME/{{ $profilesDir }}/$1/gh"
+  if ! profile-enabled gh "$profile"; then
+    print -u2 "profile-use: GitHub CLI is not configured for profile: $profile"
+    return 1
+  fi
+  command mkdir -p -- "$profile_dir"
   profile-clear-gh-environment
-  unset GH_CONFIG_DIR
   unset GIT_CONFIG_PARAMETERS
-  command gh auth switch --hostname github.com --user "$username"
+  export GH_CONFIG_DIR="$profile_dir"
 }
 
 # Start VS Code with its profile-specific environment.
@@ -248,6 +231,7 @@ profile-use-vscode() {
       {{- end -}}
       {{- if has "vscode" $tools -}}
         {{- printf "    \"%s\")\n" $profile -}}
+        {{- printf "      profile_env+=(\"GH_CONFIG_DIR=$HOME/%s/%s/gh\")\n" $profilesDir $profile -}}
         {{- range $tool := $tools -}}
           {{- if eq $tool "codex" -}}
             {{- printf "      profile_env+=(\"CODEX_HOME=$HOME/%s/%s/codex\")\n" $profilesDir $profile -}}
@@ -257,10 +241,10 @@ profile-use-vscode() {
             {{- printf "      profile_env+=(\"COPILOT_HOME=$HOME/%s/%s/copilot\")\n" $profilesDir $profile -}}
           {{- else if eq $tool "gemini" -}}
             {{- printf "      profile_env+=(\"GEMINI_CLI_HOME=$HOME/%s/%s/gemini\")\n" $profilesDir $profile -}}
-          {{- else if eq $tool "gh" -}}
-            {{- printf "      gh_profile_enabled=1\n" -}}
           {{- else if eq $tool "git" -}}
             {{- printf "      git_profile_enabled=1\n" -}}
+          {{- else if eq $tool "gh" -}}
+            {{- printf "      gh_profile_enabled=1\n" -}}
           {{- end -}}
         {{- end -}}
         {{- printf "      ;;\n" -}}
@@ -268,34 +252,15 @@ profile-use-vscode() {
     {{- end -}}
     {{- printf "    *) ;;\n  esac\n" }}
 
-  # VS Code inherits the first running instance's environment; quit it before switching profiles.
-  if (( gh_profile_enabled || git_profile_enabled )); then
-    (
-      if (( gh_profile_enabled )); then
-        profile-gh-switch "$profile" || return $?
-      else
-        profile-clear-gh-environment
-        unset GH_CONFIG_DIR
-      fi
-      profile-git-config "$profile" "$git_profile_enabled"
-      if [[ "$vscode_profile" == "Default" ]]; then
-        profile-clear-environment
-      fi
-      command env "${profile_env[@]}" code --profile "$vscode_profile" "$@"
-    )
-  elif [[ "$vscode_profile" == "Default" ]]; then
-    (
-      profile-clear-gh-environment
+  # VS Code may reuse an existing process and keep its original environment.
+  (
+    profile-clear-gh-environment
+    profile-git-config "$profile" "$gh_profile_enabled"
+    if [[ "$vscode_profile" == "Default" ]]; then
       profile-clear-environment
-      command env "${profile_env[@]}" code --profile "$vscode_profile" "$@"
-    )
-  else
-    (
-      profile-clear-gh-environment
-      unset GH_CONFIG_DIR
-      command env "${profile_env[@]}" code --profile "$vscode_profile" "$@"
-    )
-  fi
+    fi
+    command env "${profile_env[@]}" code --profile "$vscode_profile" "$@"
+  )
 }
 
 # Run Git with the selected profile's GitHub credentials and author identity.
@@ -304,7 +269,10 @@ profile-use-git() {
   shift
   (
     if profile-enabled gh "$profile"; then
-      profile-gh-switch "$profile" || return $?
+      profile-use-gh "$profile" || return $?
+    else
+      profile-clear-gh-environment
+      unset GH_CONFIG_DIR
     fi
     profile-git-config "$profile"
     command git "$@"
@@ -318,7 +286,7 @@ profile-use-cli() {
 
   if [[ "$tool" == gh ]]; then
     (
-      profile-gh-switch "$profile" || return $?
+      profile-use-gh "$profile" || return $?
       profile-git-config "$profile" 0
       command gh "$@"
     )

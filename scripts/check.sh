@@ -5,8 +5,8 @@ set -eu
 
 CHEZMOI=${CHEZMOI:-chezmoi}
 CHEZMOI_SOURCE=${CHEZMOI_SOURCE:-$PWD}
-PROFILE_TEST_DATA='{"defaultProfile":"Default","profiles":{"default":{"tools":["codex","vscode"],"name":"Default"},"review":{"tools":["codex","gh","git","vscode"],"alias":"review-account","name":"Review Profile","email":"profile@example.test","git":{"name":"Review User","email":"review@example.test"},"gh":{"username":"review-user"}},"git_only":{"tools":["git","vscode"],"email":"git-only@example.test"},"vscode_only":{"tools":["vscode"]},"gh-default":{"tools":["gh"],"alias":"fallback-login"},"gh-git-default":{"tools":["gh","git"],"alias":"custom-alias","git":{"name":"Fallback Git","email":"fallback@example.test"}}}}'
-NUMERIC_PROFILE_TEST_DATA='{"profiles":{"numeric":{"tools":["git","gh"],"alias":123,"name":123,"gh":{"username":"numeric-user"}}}}'
+PROFILE_TEST_DATA='{"defaultProfile":"Default","profiles":{"default":{"tools":["codex","vscode"],"name":"Default"},"review":{"tools":["codex","gh","git","vscode"],"alias":"review-account","name":"Review Profile","email":"profile@example.test","git":{"name":"Review User","email":"review@example.test"}},"git_only":{"tools":["git","vscode"],"email":"git-only@example.test"},"vscode_only":{"tools":["vscode"]},"gh-default":{"tools":["gh"],"alias":"fallback-login"},"gh-git-default":{"tools":["gh","git"],"alias":"custom-alias","git":{"name":"Fallback Git","email":"fallback@example.test"}}}}'
+NUMERIC_PROFILE_TEST_DATA='{"profiles":{"numeric":{"tools":["git","gh"],"alias":123,"name":123}}}'
 PROFILE_INSTRUCTION_TEST_DATA='{"profiles":{"instructions":"All profile base","inherit":{"tools":["codex"]},"empty_profile":{"tools":["codex"],"instructions":""},"empty_tool":{"tools":["codex"],"instructions":"Parent profile base","codex":{"instructions":""}},"specific":{"tools":["codex"],"instructions":"Specific\u0027s base"},"tool":{"tools":["codex"],"instructions":"Profile base","codex":{"force":true,"instructions":"Tool replacement"}}}}'
 PROFILE_FORCE_TEST_DATA='{"profiles":{"instructions":"Global base","ai_append":{"tools":["codex"],"instructions":"Profile base","ai":{"force":false,"instructions":"AI append"},"codex":{"force":false,"instructions":"Codex append"}},"ai_default":{"tools":["codex"],"ai":{"instructions":"AI default append"}},"ai_force":{"tools":["codex"],"instructions":"Profile base","ai":{"force":true,"instructions":"AI replacement"}},"tool_force_false":{"tools":["codex"],"instructions":"Profile base","codex":{"force":false,"instructions":"Tool append"}},"tool_default":{"tools":["codex"],"instructions":"Tool parent base","codex":{"instructions":"Tool default append"}},"tool_force_true":{"tools":["codex"],"instructions":"Profile base","codex":{"force":true,"instructions":"Tool replacement"}}}}'
 
@@ -94,9 +94,9 @@ grep -F 'invalid profile alias' "$tmpdir/invalid-profile-alias" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data "$NUMERIC_PROFILE_TEST_DATA" cat ~/.config/git/config > "$tmpdir/numeric-git-config"
 grep -F 'profile-123 = ' "$tmpdir/numeric-git-config" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data "$PROFILE_TEST_DATA" cat ~/.config/git/config > "$tmpdir/git-config"
-grep -F 'review-account = "!f() { unset GH_CONFIG_DIR GH_TOKEN' "$tmpdir/git-config" > /dev/null
-grep -F 'gh auth switch --hostname github.com --user review-user' "$tmpdir/git-config" > /dev/null
-grep -F 'gh auth switch --hostname github.com --user gh-git-default' "$tmpdir/git-config" > /dev/null
+grep -F 'review-account = "!f() { unset GH_TOKEN' "$tmpdir/git-config" > /dev/null
+grep -F 'GH_CONFIG_DIR=\"$HOME/.config/profiles/review/gh\" git' "$tmpdir/git-config" > /dev/null
+grep -F 'GH_CONFIG_DIR=\"$HOME/.config/profiles/gh-git-default/gh\" git' "$tmpdir/git-config" > /dev/null
 grep -F -- '-c user.name=\"Review User\" -c user.email=\"review@example.test\"' "$tmpdir/git-config" > /dev/null
 grep -F 'git-only = "!f() { git -c user.email=\"git-only@example.test\"' "$tmpdir/git-config" > /dev/null
 mkdir -p "$tmpdir/gh-bin"
@@ -105,15 +105,14 @@ chmod +x "$tmpdir/gh-bin/gh"
 PATH="$tmpdir/gh-bin:$PATH" GIT_CONFIG_GLOBAL="$tmpdir/git-config" GIT_CONFIG_SYSTEM=/dev/null git review-account config user.name | grep -Fx 'Review User' > /dev/null
 PATH="$tmpdir/gh-bin:$PATH" GIT_CONFIG_GLOBAL="$tmpdir/git-config" GIT_CONFIG_SYSTEM=/dev/null git review-account config user.email | grep -Fx 'review@example.test' > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data "$PROFILE_TEST_DATA" cat ~/.config/gh/config.yml > "$tmpdir/gh-config"
-grep -F 'review-account: "!unset GH_CONFIG_DIR GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN GIT_CONFIG_PARAMETERS; gh auth switch --hostname github.com --user review-user' "$tmpdir/gh-config" > /dev/null
-grep -F '&& GIT_CONFIG_PARAMETERS=' "$tmpdir/gh-config" > /dev/null
+grep -F 'GH_CONFIG_DIR=\"$HOME/.config/profiles/review/gh\"' "$tmpdir/gh-config" > /dev/null
+grep -F 'GIT_CONFIG_PARAMETERS=' "$tmpdir/gh-config" > /dev/null
 GIT_CONFIG_PARAMETERS="'user.name=Review User' 'user.email=review@example.test'" git config user.name | grep -Fx 'Review User' > /dev/null
 GIT_CONFIG_PARAMETERS="'user.name=Review User' 'user.email=review@example.test'" git config user.email | grep -Fx 'review@example.test' > /dev/null
-grep -F 'fallback-login: "!unset GH_CONFIG_DIR GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN GIT_CONFIG_PARAMETERS;' "$tmpdir/gh-config" > /dev/null
-grep -F 'fallback-login: "!unset GH_CONFIG_DIR GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN GIT_CONFIG_PARAMETERS; gh auth switch --hostname github.com --user gh-default' "$tmpdir/gh-config" > /dev/null
-grep -F 'custom-alias: "!unset GH_CONFIG_DIR GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN GIT_CONFIG_PARAMETERS; gh auth switch --hostname github.com --user gh-git-default' "$tmpdir/gh-config" > /dev/null
+grep -F 'GH_CONFIG_DIR=\"$HOME/.config/profiles/gh-default/gh\"' "$tmpdir/gh-config" > /dev/null
+grep -F 'GH_CONFIG_DIR=\"$HOME/.config/profiles/gh-git-default/gh\"' "$tmpdir/gh-config" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data "$NUMERIC_PROFILE_TEST_DATA" cat ~/.config/gh/config.yml > "$tmpdir/numeric-gh-config"
-grep -F '"123": "!unset GH_CONFIG_DIR GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN GIT_CONFIG_PARAMETERS; gh auth switch --hostname github.com --user numeric-user' "$tmpdir/numeric-gh-config" > /dev/null
+grep -F 'GH_CONFIG_DIR=\"$HOME/.config/profiles/numeric/gh\"' "$tmpdir/numeric-gh-config" > /dev/null
 mkdir -p "$tmpdir/numeric-gh-config-dir"
 cp "$tmpdir/numeric-gh-config" "$tmpdir/numeric-gh-config-dir/config.yml"
 GH_CONFIG_DIR="$tmpdir/numeric-gh-config-dir" gh alias list | grep -F '123' > /dev/null
@@ -125,8 +124,7 @@ printf '%s\n' '#!/bin/sh' 'printf "%s|%s|%s|%s\n" "${GH_CONFIG_DIR-}" "${GH_TOKE
 chmod +x "$tmpdir/gh-bin/gh"
 REAL_GH=$(command -v gh)
 PATH="$tmpdir/gh-bin:$PATH" HOME="$tmpdir/gh-home" GH_CONFIG_DIR="$tmpdir/gh-config-dir" GH_TOKEN=shared-token GH_TEST_LOG="$tmpdir/gh-test-log" "$REAL_GH" review-account auth status > "$tmpdir/gh-alias-result"
-grep -Fx '||auth switch --hostname github.com --user review-user|' "$tmpdir/gh-test-log" > /dev/null
-grep -F '||auth status|' "$tmpdir/gh-test-log" > /dev/null
+grep -F "$tmpdir/gh-home/.config/profiles/review/gh||auth status|" "$tmpdir/gh-test-log" > /dev/null
 grep -F "'user.name=Review User' 'user.email=review@example.test'" "$tmpdir/gh-test-log" > /dev/null
 grep -Fx 'auth status' "$tmpdir/gh-alias-result" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"profiles":null}' cat ~/.config/zsh/aliases.zsh > "$tmpdir/aliases-no-profiles"
@@ -143,20 +141,21 @@ grep -F '$(dirname "$(chezmoi source-path)")' "$tmpdir/aliases" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" cat ~/.config/zsh/exports.zsh > "$tmpdir/exports"
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data "$PROFILE_TEST_DATA" cat ~/.config/zsh/functions.zsh > "$tmpdir/functions"
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"profiles":null}' cat ~/.config/zsh/functions.zsh > "$tmpdir/functions-no-profiles"
-! grep -E '^(profile-enabled|profile-git-config|profile-clear-environment|profile-clear-gh-environment|profile-gh-switch|profile-use-vscode|profile-use-git|profile-use-cli|profile-use)\(\)' "$tmpdir/functions-no-profiles" > /dev/null
+! grep -E '^(profile-enabled|profile-git-config|profile-clear-environment|profile-clear-gh-environment|profile-use-gh|profile-use-vscode|profile-use-git|profile-use-cli|profile-use)\(\)' "$tmpdir/functions-no-profiles" > /dev/null
 mkdir -p "$tmpdir/profile-gh-home" "$tmpdir/profile-gh-bin"
 printf '%s\n' '#!/bin/sh' 'printf "%s\n" "${GH_TOKEN-}" "${GH_CONFIG_DIR-}" "${GIT_CONFIG_PARAMETERS-}" "$*"' > "$tmpdir/profile-gh-bin/gh"
 chmod +x "$tmpdir/profile-gh-bin/gh"
 PATH="$tmpdir/profile-gh-bin:$PATH" HOME="$tmpdir/profile-gh-home" GH_TOKEN=shared-token zsh -c 'source "$1"; profile-use gh review auth status' _ "$tmpdir/functions" > "$tmpdir/profile-gh-auth"
 test -z "$(sed -n '1p' "$tmpdir/profile-gh-auth")"
-test -z "$(sed -n '2p' "$tmpdir/profile-gh-auth")"
-grep -Fx 'auth switch --hostname github.com --user review-user' "$tmpdir/profile-gh-auth" > /dev/null
+test "$(sed -n '2p' "$tmpdir/profile-gh-auth")" = "$tmpdir/profile-gh-home/.config/profiles/review/gh"
 grep -F "'user.name=Review User' 'user.email=review@example.test'" "$tmpdir/profile-gh-auth" > /dev/null
 grep -Fx 'auth status' "$tmpdir/profile-gh-auth" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" cat ~/.config/zsh/integrations.zsh > "$tmpdir/integrations"
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"profiles":null}' cat ~/.config/zsh/integrations.zsh > "$tmpdir/integrations-no-profiles"
 grep -F 'vscode_profile="Review Profile"' "$tmpdir/functions" > /dev/null
-grep -F 'gh-git-default) username="gh-git-default" ;;' "$tmpdir/functions" > /dev/null
+grep -F 'GH_CONFIG_DIR=$HOME/.config/profiles/review/gh' "$tmpdir/functions" > /dev/null
+grep -F 'GH_CONFIG_DIR=$HOME/.config/profiles/git_only/gh' "$tmpdir/functions" > /dev/null
+grep -F 'GH_CONFIG_DIR=$HOME/.config/profiles/vscode_only/gh' "$tmpdir/functions" > /dev/null
 grep -F 'CODEX_HOME=$HOME/.config/profiles/review/codex' "$tmpdir/functions" > /dev/null
 grep -F 'CODEX_HOME=$HOME/.config/profiles/default/codex' "$tmpdir/functions" > /dev/null
 grep -F 'git_config_parameters="${git_config_parameters}${git_config_parameters:+ }'\''user.name=Review User'\''"' "$tmpdir/functions" > /dev/null
@@ -164,18 +163,20 @@ grep -F 'git_config_parameters="${git_config_parameters}${git_config_parameters:
 GIT_CONFIG_COUNT=2 GIT_CONFIG_KEY_0=credential.helper GIT_CONFIG_KEY_1=credential.helper GIT_CONFIG_VALUE_1=stale zsh -c 'source "$1"; profile-git-config review; test -z "${GIT_CONFIG_VALUE_0+x}"; test "$(git config user.name)" = "Review User"; test "$(git config user.email)" = "review@example.test"; git config --get-all credential.helper | grep -Fx "!gh auth git-credential" > /dev/null' _ "$tmpdir/functions"
 printf '%s\n' '#!/bin/sh' 'printf "%s\n" "${GIT_CONFIG_PARAMETERS-}" "${GH_CONFIG_DIR-}" "${GH_TOKEN-}"' > "$tmpdir/profile-gh-bin/code"
 chmod +x "$tmpdir/profile-gh-bin/code"
-PATH="$tmpdir/profile-gh-bin:$PATH" GH_CONFIG_DIR="$tmpdir/stale-gh-config" GH_TOKEN=stale-token zsh -c 'source "$1"; profile-use vscode git_only' _ "$tmpdir/functions" > "$tmpdir/profile-vscode-git-only"
+PATH="$tmpdir/profile-gh-bin:$PATH" HOME="$tmpdir/profile-gh-home" GH_CONFIG_DIR="$tmpdir/stale-gh-config" GH_TOKEN=stale-token zsh -c 'source "$1"; profile-use vscode git_only' _ "$tmpdir/functions" > "$tmpdir/profile-vscode-git-only"
 grep -F "'user.email=git-only@example.test'" "$tmpdir/profile-vscode-git-only" > /dev/null
 ! grep -F 'credential.helper' "$tmpdir/profile-vscode-git-only" > /dev/null
-test -z "$(sed -n '2p' "$tmpdir/profile-vscode-git-only")"
+test "$(sed -n '2p' "$tmpdir/profile-vscode-git-only")" = "$tmpdir/profile-gh-home/.config/profiles/git_only/gh"
 test -z "$(sed -n '3p' "$tmpdir/profile-vscode-git-only")"
-PATH="$tmpdir/profile-gh-bin:$PATH" GH_CONFIG_DIR="$tmpdir/stale-gh-config" GH_TOKEN=stale-token zsh -c 'source "$1"; profile-use vscode vscode_only' _ "$tmpdir/functions" > "$tmpdir/profile-vscode-only"
-test -z "$(sed -n '2p' "$tmpdir/profile-vscode-only")"
+PATH="$tmpdir/profile-gh-bin:$PATH" HOME="$tmpdir/profile-gh-home" GH_CONFIG_DIR="$tmpdir/stale-gh-config" GH_TOKEN=stale-token zsh -c 'source "$1"; profile-use vscode vscode_only' _ "$tmpdir/functions" > "$tmpdir/profile-vscode-only"
+test "$(sed -n '2p' "$tmpdir/profile-vscode-only")" = "$tmpdir/profile-gh-home/.config/profiles/vscode_only/gh"
 test -z "$(sed -n '3p' "$tmpdir/profile-vscode-only")"
+PATH="$tmpdir/profile-gh-bin:$PATH" HOME="$tmpdir/profile-gh-home" GH_CONFIG_DIR="$tmpdir/stale-gh-config" GH_TOKEN=stale-token zsh -c 'source "$1"; profile-use vscode review' _ "$tmpdir/functions" > "$tmpdir/profile-vscode-review"
+test "$(sed -n '2p' "$tmpdir/profile-vscode-review")" = "$tmpdir/profile-gh-home/.config/profiles/review/gh"
 grep -F 'profile-clear-environment() {' "$tmpdir/functions" > /dev/null
-test "$(grep -F -c 'profile-clear-environment' "$tmpdir/functions")" -eq 3
+test "$(grep -F -c 'profile-clear-environment' "$tmpdir/functions")" -eq 2
 grep -F 'profile-clear-gh-environment() {' "$tmpdir/functions" > /dev/null
-test "$(grep -F -c 'profile-clear-gh-environment' "$tmpdir/functions")" -eq 5
+test "$(grep -F -c 'profile-clear-gh-environment' "$tmpdir/functions")" -eq 4
 ! grep -F 'unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN' "$tmpdir/functions" > /dev/null
 grep -F 'profile-enabled() {' "$tmpdir/functions" > /dev/null
 ! grep -F 'ai-profile-enabled' "$tmpdir/functions" > /dev/null
@@ -239,7 +240,7 @@ if [ -s "$tmpdir/darwin-packages.sh" ]; then
 fi
 grep -F '/.config/profiles"' "$tmpdir/setup-profiles.sh" > /dev/null
 ! grep -F 'code --profile' "$tmpdir/setup-profiles.sh" > /dev/null
-! grep -F 'create_profile gh' "$tmpdir/setup-profiles.sh" > /dev/null
+grep -F "create_profile gh 'review'" "$tmpdir/setup-profiles.sh" > /dev/null
 mkdir -p "$tmpdir/profile-cleanup-home/.config/gh" "$tmpdir/profile-cleanup-home/.config/profiles/review/gh" "$tmpdir/profile-cleanup-home/.config/profiles/git_only/gh"
 touch "$tmpdir/profile-cleanup-home/.config/gh/config.yml"
 ln -s "$tmpdir/profile-cleanup-home/.config/gh/config.yml" "$tmpdir/profile-cleanup-home/.config/profiles/review/gh/config.yml"
@@ -250,7 +251,10 @@ mkdir -p "$tmpdir/vscode-bin"
 printf '%s\n' '#!/bin/sh' 'if [ "$1" = --version ]; then printf "%s\\n" "${CHEZMOI_VSCODE_TEST_VERSION:-1.115.0}"; exit 0; fi' 'printf "%s\\n" "$*" >> "$CHEZMOI_VSCODE_TEST_LOG"' > "$tmpdir/vscode-bin/code"
 chmod +x "$tmpdir/vscode-bin/code"
 HOME="$tmpdir/profile-cleanup-home" CHEZMOI_PROFILE_SETUP_TESTING=1 CHEZMOI_VSCODE_PROFILE_STORAGE_PATH="$tmpdir/vscode-profile-storage/storage.json" CHEZMOI_VSCODE_CLI="$tmpdir/vscode-bin/code" CHEZMOI_VSCODE_TEST_LOG="$tmpdir/vscode-install.log" sh "$tmpdir/setup-profiles.sh"
-test ! -e "$tmpdir/profile-cleanup-home/.config/profiles/review/gh"
+test -L "$tmpdir/profile-cleanup-home/.config/profiles/review/gh/config.yml"
+test "$(readlink "$tmpdir/profile-cleanup-home/.config/profiles/review/gh/config.yml")" = "$tmpdir/profile-cleanup-home/.config/gh/config.yml"
+test -L "$tmpdir/profile-cleanup-home/.config/profiles/git_only/gh/config.yml"
+test -L "$tmpdir/profile-cleanup-home/.config/profiles/vscode_only/gh/config.yml"
 grep -Fx 'preserve custom account data' "$tmpdir/profile-cleanup-home/.config/profiles/git_only/gh/hosts.yml" > /dev/null
 grep -Fx -- '--install-extension GitHub.copilot --profile Review Profile' "$tmpdir/vscode-install.log" > /dev/null
 grep -Fx -- '--install-extension GitHub.copilot-chat --profile git_only' "$tmpdir/vscode-install.log" > /dev/null

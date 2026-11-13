@@ -105,21 +105,6 @@ remove_unconfigured_profiles() {
 
 remove_unconfigured_profiles
 
-# Remove only the legacy shared-config symlink and empty GH profile folders.
-remove_legacy_gh_profile_dirs() {
-  [ -d "$profiles_base" ] || return 0
-  for gh_dir in "$profiles_base"/*/gh; do
-    [ -d "$gh_dir" ] || continue
-    gh_config="$gh_dir/config.yml"
-    if [ -L "$gh_config" ] && [ "$(readlink "$gh_config")" = "$HOME/.config/gh/config.yml" ]; then
-      rm -- "$gh_config"
-    fi
-    rmdir "$gh_dir" 2>/dev/null || :
-  done
-}
-
-remove_legacy_gh_profile_dirs
-
 {{ if $vscodeProfiles -}}
 # Configure native VS Code profiles to inherit shared contents from Default.
 configure_vscode_profiles() {
@@ -149,6 +134,19 @@ link_if_missing() {
     ln -s "$source_file" "$target_file"
   fi
 }
+
+{{ range $profile, $config := $profiles -}}
+  {{ if ne $profile "instructions" -}}
+    {{ $tools := $config -}}
+    {{ if not (kindIs "slice" $config) -}}
+      {{ $tools = index $config "tools" -}}
+    {{ end -}}
+    {{ if or (has "gh" $tools) (has "vscode" $tools) -}}
+create_profile gh '{{ $profile }}'
+link_if_missing "$HOME/.config/gh/config.yml" "$profiles_base/{{ $profile }}/gh/config.yml"
+    {{ end -}}
+  {{ end -}}
+{{ end -}}
 
 profile_instruction_marker='<!-- Managed by chezmoi; edit profile.yaml instead. -->'
 legacy_profile_instruction_marker='<!-- Managed by chezmoi; edit profiles.yaml instead. -->'

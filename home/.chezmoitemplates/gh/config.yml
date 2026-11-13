@@ -19,6 +19,7 @@ aliases:
     rv: repo view
     runs: run list
 {{ $profiles := (index . "profiles") | default dict }}
+{{ $profilesDir := (index . "profilesDir") | default ".config/profiles" }}
 {{- range $profile, $config := $profiles }}
   {{- $tools := $config }}
   {{- if not (kindIs "slice" $config) }}{{ $tools = index $config "tools" }}{{ end }}
@@ -30,8 +31,6 @@ aliases:
       {{- $ghConfig = index $config "gh" | default dict }}
     {{- end }}
     {{- if not (kindIs "map" $ghConfig) }}{{ fail (printf "gh config for profile %q must be a table" $profile) }}{{ end }}
-    {{- $username := index $ghConfig "username" | default $profile }}
-    {{- if not (regexMatch "^[a-zA-Z0-9-]+$" $username) }}{{ fail (printf "invalid GitHub username %q for profile %q" $username $profile) }}{{ end }}
     {{- $gitEnabled := has "git" $tools }}
     {{- $gitName := "" }}
     {{- $gitEmail := "" }}
@@ -52,7 +51,7 @@ aliases:
     {{- if not (regexMatch "^[a-zA-Z0-9._-]+$" $profileAlias) }}{{ fail (printf "invalid profile alias %q for profile %q" $profileAlias $profile) }}{{ end }}
     {{- $ghAlias := $profileAlias }}
     {{- if regexMatch "^[0-9]+$" $ghAlias }}{{ $ghAlias = printf "%q" $ghAlias }}{{ end }}
-    {{- printf "    %s: %s\n" $ghAlias (printf "!unset GH_CONFIG_DIR GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN GIT_CONFIG_PARAMETERS; gh auth switch --hostname github.com --user %s >/dev/null && %sgh \"$@\"" $username $gitConfigEnv | quote) }}
+    {{- printf "    %s: %s\n" $ghAlias (printf "!unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN GIT_CONFIG_PARAMETERS; GH_CONFIG_DIR=\"$HOME/%s/%s/gh\" %sgh \"$@\"" $profilesDir $profile $gitConfigEnv | quote) }}
   {{- end }}
 {{- end }}
 # The path to a unix socket through which to send HTTP connections. If blank, HTTP traffic will be handled by net/http.DefaultTransport.
