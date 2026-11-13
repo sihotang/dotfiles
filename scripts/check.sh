@@ -188,9 +188,20 @@ mkdir -p "$tmpdir/profile-cleanup-home/.config/gh" "$tmpdir/profile-cleanup-home
 touch "$tmpdir/profile-cleanup-home/.config/gh/config.yml"
 ln -s "$tmpdir/profile-cleanup-home/.config/gh/config.yml" "$tmpdir/profile-cleanup-home/.config/profiles/review/gh/config.yml"
 printf '%s\n' 'preserve custom account data' > "$tmpdir/profile-cleanup-home/.config/profiles/git_only/gh/hosts.yml"
-HOME="$tmpdir/profile-cleanup-home" sh "$tmpdir/setup-profiles.sh"
+mkdir -p "$tmpdir/vscode-profile-storage"
+printf '%s\n' '{"sentinel":"preserve","userDataProfiles":[{"name":"Review Profile","location":"existing-review","useDefaultFlags":{"extensions":true}},{"name":"Unmanaged","location":"existing-unmanaged"}]}' > "$tmpdir/vscode-profile-storage/storage.json"
+mkdir -p "$tmpdir/vscode-bin"
+printf '%s\n' '#!/bin/sh' 'if [ "$1" = --version ]; then printf "%s\\n" "${CHEZMOI_VSCODE_TEST_VERSION:-1.115.0}"; exit 0; fi' 'printf "%s\\n" "$*" >> "$CHEZMOI_VSCODE_TEST_LOG"' > "$tmpdir/vscode-bin/code"
+chmod +x "$tmpdir/vscode-bin/code"
+HOME="$tmpdir/profile-cleanup-home" CHEZMOI_PROFILE_SETUP_TESTING=1 CHEZMOI_VSCODE_PROFILE_STORAGE_PATH="$tmpdir/vscode-profile-storage/storage.json" CHEZMOI_VSCODE_CLI="$tmpdir/vscode-bin/code" CHEZMOI_VSCODE_TEST_LOG="$tmpdir/vscode-install.log" sh "$tmpdir/setup-profiles.sh"
 test ! -e "$tmpdir/profile-cleanup-home/.config/profiles/review/gh"
 grep -Fx 'preserve custom account data' "$tmpdir/profile-cleanup-home/.config/profiles/git_only/gh/hosts.yml" > /dev/null
+grep -Fx -- '--install-extension GitHub.copilot --profile Review Profile' "$tmpdir/vscode-install.log" > /dev/null
+grep -Fx -- '--install-extension GitHub.copilot-chat --profile git_only' "$tmpdir/vscode-install.log" > /dev/null
+grep -Fx -- '--install-extension GitHub.copilot' "$tmpdir/vscode-install.log" > /dev/null
+printf '%s\n' '[{"id":"review","name":"Review Profile"}]' | CHEZMOI_PROFILE_SETUP_TESTING=1 CHEZMOI_VSCODE_PROFILE_STORAGE_PATH="$tmpdir/vscode-profile-storage/storage.json" CHEZMOI_VSCODE_CLI="$tmpdir/vscode-bin/code" CHEZMOI_VSCODE_TEST_VERSION=1.145.0 CHEZMOI_VSCODE_TEST_LOG="$tmpdir/vscode-builtin-install.log" python3 "$CHEZMOI_SOURCE/scripts/configure-vscode-profiles.py"
+test ! -s "$tmpdir/vscode-builtin-install.log"
+python3 -c 'import json,sys; data=json.load(open(sys.argv[1])); profiles=data["userDataProfiles"]; assert data["sentinel"] == "preserve"; assert len(profiles) >= 3; review=next(p for p in profiles if p["name"] == "Review Profile"); assert all(review["useDefaultFlags"][key] is True for key in ("settings","keybindings","tasks","mcp","snippets")); assert review["useDefaultFlags"]["extensions"] is False; assert any(p["name"] == "Unmanaged" for p in profiles); assert any(p["name"] == "git_only" for p in profiles); assert not any(p["name"] == "Default" for p in profiles)' "$tmpdir/vscode-profile-storage/storage.json"
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"profiles":null}' execute-template --file home/.chezmoiscripts/run_onchange_setup-profiles.sh.tmpl > "$tmpdir/setup-profiles-empty.sh"
 grep -F 'cli_auth_credentials_store = "file"' "$tmpdir/setup-profiles.sh" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" cat ~/.gemini/settings.json > "$tmpdir/gemini-settings.json"
