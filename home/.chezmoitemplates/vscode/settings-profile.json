@@ -1,0 +1,7 @@
+{{- $configDir := .configDir -}}
+{
+	".github/instructions": true,
+	".claude/rules": true,
+	{{ printf "~/%s/copilot" $configDir | toJson }}: true,
+	{{ printf "~/%s/claude" $configDir | toJson }}: true
+}

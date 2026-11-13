@@ -69,7 +69,6 @@
 		"[go-template]",
 		"chat.agent.enabled",
 		"chat.disableAIFeatures",
-		"chat.instructionsFilesLocations",
 		"chat.viewSessions.orientation",
 		"cSpell.language",
 		"cSpell.userWords",

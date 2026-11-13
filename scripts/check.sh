@@ -29,10 +29,12 @@ grep -Fx '    email = "you@example.com"' "$tmpdir/gitconfig" > /dev/null
 printf '%s\n' 'Keep existing local data' > "$tmpdir/data-bootstrap-source/home/.chezmoidata/ai.yaml"
 sh "$tmpdir/data-bootstrap-source/scripts/copy-example-data.sh" "$tmpdir/data-bootstrap-source" > /dev/null
 grep -Fx 'Keep existing local data' "$tmpdir/data-bootstrap-source/home/.chezmoidata/ai.yaml" > /dev/null
-mkdir -p "$tmpdir/profile-instruction-source/home/.chezmoiscripts" "$tmpdir/profile-instruction-source/home/.chezmoitemplates/codex" "$tmpdir/profile-instruction-source/scripts" "$tmpdir/profile-instruction-home/.codex"
+mkdir -p "$tmpdir/profile-instruction-source/home/.chezmoiscripts" "$tmpdir/profile-instruction-source/home/.chezmoitemplates/codex" "$tmpdir/profile-instruction-source/home/.chezmoitemplates/vscode" "$tmpdir/profile-instruction-source/scripts" "$tmpdir/profile-instruction-home/.codex"
 printf '%s\n' home > "$tmpdir/profile-instruction-source/.chezmoiroot"
 cp scripts/share-codex-config.py "$tmpdir/profile-instruction-source/scripts/"
+cp scripts/configure-vscode-profiles.py "$tmpdir/profile-instruction-source/scripts/"
 cp home/.chezmoitemplates/codex/config.toml "$tmpdir/profile-instruction-source/home/.chezmoitemplates/codex/"
+cp home/.chezmoitemplates/vscode/settings-profile.json "$tmpdir/profile-instruction-source/home/.chezmoitemplates/vscode/"
 printf '%s\n' 'Shared agent baseline' > "$tmpdir/profile-instruction-home/.codex/AGENTS.md"
 cp home/.chezmoiscripts/run_onchange_setup-profiles.sh.tmpl "$tmpdir/profile-instruction-source/home/.chezmoiscripts/setup.tmpl"
 "$CHEZMOI" --source "$tmpdir/profile-instruction-source" --config "$tmpdir/chezmoi.toml" --override-data "$PROFILE_INSTRUCTION_TEST_DATA" execute-template --file "$tmpdir/profile-instruction-source/home/.chezmoiscripts/setup.tmpl" > "$tmpdir/profile-instruction-setup.sh"
@@ -184,6 +186,10 @@ grep -F 'profile-enabled() {' "$tmpdir/functions" > /dev/null
 ! grep -F 'ai-profile-enabled' "$tmpdir/functions" > /dev/null
 ! grep -F 'ai-use() {' "$tmpdir/functions" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data "$PROFILE_TEST_DATA" execute-template --file home/.chezmoiscripts/run_onchange_setup-profiles.sh.tmpl > "$tmpdir/setup-profiles.sh"
+"$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"configDir":".local/profiles/review"}' execute-template --file home/.chezmoitemplates/vscode/settings-profile.json > "$tmpdir/vscode-profile-instructions.json"
+python3 -c 'import json,sys; locations=json.load(open(sys.argv[1])); assert locations == {".github/instructions":True,".claude/rules":True,"~/.local/profiles/review/copilot":True,"~/.local/profiles/review/claude":True}' "$tmpdir/vscode-profile-instructions.json"
+profile_setup_checksum=$(python3 -c 'import hashlib,pathlib; print(hashlib.sha256(pathlib.Path("scripts/configure-vscode-profiles.py").read_bytes()).hexdigest())')
+grep -F "# VS Code profile setup checksum: $profile_setup_checksum" "$tmpdir/setup-profiles.sh" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" execute-template --file home/.chezmoiscripts/darwin/run_onchange_before_install-packages.sh.tmpl > "$tmpdir/darwin-packages.sh"
 grep -Fx '!packages.yaml' home/.chezmoidata/.gitignore > /dev/null
 ! grep -Fx '        - chezmoi' home/.chezmoidata/packages.yaml > /dev/null
@@ -267,12 +273,14 @@ cli_auth_credentials_store = "file"
 trust_level = "trusted"
 EOF
 printf '%s\n' 'preserve custom account data' > "$tmpdir/profile-cleanup-home/.config/profiles/git_only/gh/hosts.yml"
-mkdir -p "$tmpdir/vscode-profile-storage"
-printf '%s\n' '{"sentinel":"preserve","userDataProfiles":[{"name":"Review Profile","location":"existing-review","useDefaultFlags":{"extensions":true}},{"name":"Unmanaged","location":"existing-unmanaged"}]}' > "$tmpdir/vscode-profile-storage/storage.json"
+mkdir -p "$tmpdir/vscode-profile-storage/User/globalStorage" "$tmpdir/vscode-profile-storage/User/profiles/existing-review"
+printf '%s\n' '{"sentinel":"preserve","userDataProfiles":[{"name":"Review Profile","location":"existing-review","useDefaultFlags":{"settings":true,"extensions":true}},{"name":"Unmanaged","location":"existing-unmanaged"}]}' > "$tmpdir/vscode-profile-storage/User/globalStorage/storage.json"
+printf '%s\n' '{"editor.formatOnSave":true,"git.autofetch":true,"chat.instructionsFilesLocations":{".github/instructions":true,".claude/rules":true,"~/.copilot/instructions":true,"~/.claude/rules":true}}' > "$tmpdir/vscode-profile-storage/User/settings.json"
+printf '%s\n' '{"custom.profileSetting":true,"chat.instructionsFilesLocations":{"old/location":true}}' > "$tmpdir/vscode-profile-storage/User/profiles/existing-review/settings.json"
 mkdir -p "$tmpdir/vscode-bin"
 printf '%s\n' '#!/bin/sh' 'if [ "$1" = --version ]; then printf "%s\\n" "${CHEZMOI_VSCODE_TEST_VERSION:-1.115.0}"; exit 0; fi' 'printf "%s\\n" "$*" >> "$CHEZMOI_VSCODE_TEST_LOG"' > "$tmpdir/vscode-bin/code"
 chmod +x "$tmpdir/vscode-bin/code"
-HOME="$tmpdir/profile-cleanup-home" CHEZMOI_PROFILE_SETUP_TESTING=1 CHEZMOI_VSCODE_PROFILE_STORAGE_PATH="$tmpdir/vscode-profile-storage/storage.json" CHEZMOI_VSCODE_CLI="$tmpdir/vscode-bin/code" CHEZMOI_VSCODE_TEST_LOG="$tmpdir/vscode-install.log" sh "$tmpdir/setup-profiles.sh"
+HOME="$tmpdir/profile-cleanup-home" CHEZMOI_PROFILE_SETUP_TESTING=1 CHEZMOI_VSCODE_PROFILE_STORAGE_PATH="$tmpdir/vscode-profile-storage/User/globalStorage/storage.json" CHEZMOI_VSCODE_CLI="$tmpdir/vscode-bin/code" CHEZMOI_VSCODE_TEST_LOG="$tmpdir/vscode-install.log" sh "$tmpdir/setup-profiles.sh"
 test -L "$tmpdir/profile-cleanup-home/.config/profiles/review/gh/config.yml"
 test "$(readlink "$tmpdir/profile-cleanup-home/.config/profiles/review/gh/config.yml")" = "$tmpdir/profile-cleanup-home/.config/gh/config.yml"
 test -L "$tmpdir/profile-cleanup-home/.config/profiles/git_only/gh/config.yml"
@@ -310,9 +318,12 @@ grep -Fx 'model = "profile-model"' "$tmpdir/codex-conflict-home/.config/profiles
 grep -Fx -- '--install-extension GitHub.copilot --profile Review Profile' "$tmpdir/vscode-install.log" > /dev/null
 grep -Fx -- '--install-extension GitHub.copilot-chat --profile git_only' "$tmpdir/vscode-install.log" > /dev/null
 grep -Fx -- '--install-extension GitHub.copilot' "$tmpdir/vscode-install.log" > /dev/null
-printf '%s\n' '[{"id":"review","name":"Review Profile"}]' | CHEZMOI_PROFILE_SETUP_TESTING=1 CHEZMOI_VSCODE_PROFILE_STORAGE_PATH="$tmpdir/vscode-profile-storage/storage.json" CHEZMOI_VSCODE_CLI="$tmpdir/vscode-bin/code" CHEZMOI_VSCODE_TEST_VERSION=1.145.0 CHEZMOI_VSCODE_TEST_LOG="$tmpdir/vscode-builtin-install.log" python3 "$CHEZMOI_SOURCE/scripts/configure-vscode-profiles.py"
+printf '%s\n' '[{"id":"review","name":"Review Profile","instructionLocations":{".github/instructions":true,".claude/rules":true,"~/.config/profiles/review/copilot":true,"~/.config/profiles/review/claude":true}},{"id":"new-profile","name":"New Profile","instructionLocations":{".github/instructions":true,".claude/rules":true,"~/.config/profiles/new-profile/copilot":true,"~/.config/profiles/new-profile/claude":true}}]' | CHEZMOI_PROFILE_SETUP_TESTING=1 CHEZMOI_VSCODE_PROFILE_STORAGE_PATH="$tmpdir/vscode-profile-storage/User/globalStorage/storage.json" CHEZMOI_VSCODE_CLI="$tmpdir/vscode-bin/code" CHEZMOI_VSCODE_TEST_VERSION=1.145.0 CHEZMOI_VSCODE_TEST_LOG="$tmpdir/vscode-builtin-install.log" python3 "$CHEZMOI_SOURCE/scripts/configure-vscode-profiles.py"
 test ! -s "$tmpdir/vscode-builtin-install.log"
-python3 -c 'import json,sys; data=json.load(open(sys.argv[1])); profiles=data["userDataProfiles"]; assert data["sentinel"] == "preserve"; assert len(profiles) >= 3; review=next(p for p in profiles if p["name"] == "Review Profile"); assert all(review["useDefaultFlags"][key] is True for key in ("settings","keybindings","tasks","mcp","snippets")); assert review["useDefaultFlags"]["extensions"] is False; assert any(p["name"] == "Unmanaged" for p in profiles); assert any(p["name"] == "git_only" for p in profiles); assert not any(p["name"] == "Default" for p in profiles)' "$tmpdir/vscode-profile-storage/storage.json"
+python3 -c 'import json,sys; data=json.load(open(sys.argv[1])); profiles=data["userDataProfiles"]; assert data["sentinel"] == "preserve"; assert any(p["name"] == "Unmanaged" for p in profiles); assert any(p["name"] == "git_only" for p in profiles); assert not any(p["name"] == "Default" for p in profiles); expected_shared=("keybindings","tasks","mcp","snippets","prompts","languageModels"); for_profile=lambda p: p["useDefaultFlags"]; review=next(p for p in profiles if p["name"] == "Review Profile"); new=next(p for p in profiles if p["name"] == "New Profile"); assert review["useDefaultFlags"]["settings"] is False and new["useDefaultFlags"]["settings"] is False; assert all(for_profile(p)[key] is True for p in (review,new) for key in expected_shared); assert all(for_profile(p)["extensions"] is False for p in (review,new))' "$tmpdir/vscode-profile-storage/User/globalStorage/storage.json"
+python3 -c 'import json,sys; settings=json.load(open(sys.argv[1])); assert settings["chat.instructionsFilesLocations"]["~/.config/profiles/new-profile/copilot"] is True' "$tmpdir/vscode-profile-storage/User/profiles/chezmoi-new-profile/settings.json"
+python3 -c 'import json,sys; settings=json.load(open(sys.argv[1])); assert settings == {"chat.instructionsFilesLocations":{".github/instructions":True,".claude/rules":True,"~/.config/profiles/review/copilot":True,"~/.config/profiles/review/claude":True}}' "$tmpdir/vscode-profile-storage/User/profiles/existing-review/settings.json"
+python3 -c 'import json,sys; settings=json.load(open(sys.argv[1])); assert settings == {"chat.instructionsFilesLocations":{".github/instructions":True,".claude/rules":True,"~/.config/profiles/new-profile/copilot":True,"~/.config/profiles/new-profile/claude":True}}' "$tmpdir/vscode-profile-storage/User/profiles/chezmoi-new-profile/settings.json"
 python3 - "$CHEZMOI_SOURCE/scripts/configure-vscode-profiles.py" "$tmpdir" <<'PY'
 import importlib.util
 import os
@@ -356,6 +367,17 @@ with mock.patch.object(module, "is_wsl", return_value=False), mock.patch.object(
     assert module.storage_path("/usr/bin/code-oss") == (
         config_home / "Code - OSS" / "User" / "globalStorage" / "storage.json"
     )
+
+# macOS exposes VS Code helper processes with capitalized names to pgrep.
+def fake_pgrep(command, **_kwargs):
+    return mock.Mock(returncode=0 if command[-1] == "Code Helper" else 1)
+
+with mock.patch.object(module.sys, "platform", "darwin"), mock.patch.object(
+    module, "is_wsl", return_value=False
+), mock.patch.object(module.shutil, "which", return_value="/usr/bin/pgrep"), mock.patch.object(
+    module.subprocess, "run", side_effect=fake_pgrep
+):
+    assert module.vscode_is_running("/opt/homebrew/bin/code")
 PY
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"profiles":null}' execute-template --file home/.chezmoiscripts/run_onchange_setup-profiles.sh.tmpl > "$tmpdir/setup-profiles-empty.sh"
 grep -F 'scripts/share-codex-config.py' "$tmpdir/setup-profiles.sh" > /dev/null
@@ -368,7 +390,7 @@ chmod +x "$tmpdir/bin/mise" "$tmpdir/bin/code"
 PATH="$tmpdir/bin:$PATH" "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" execute-template --file 'home/private_Library/private_Application Support/private_Code/User/settings.json.tmpl' > "$tmpdir/vscode-settings.json"
 python3 -c 'import json,sys; settings=json.load(open(sys.argv[1])); workspace=json.load(open(sys.argv[2])); associations=workspace["files.associations"]; assert "**/.chezmoitemplates/vscode/settings.json" not in settings["files.associations"]; assert associations["**/*.tmpl"] == "go-template"; assert associations["**/.chezmoitemplates/vscode/settings.json"] == "go-template"' "$tmpdir/vscode-settings.json" .vscode/settings.json
 python3 -m json.tool "$tmpdir/vscode-settings.json" > /dev/null
-python3 -c 'import json,sys; settings=json.load(open(sys.argv[1])); keys=set(settings)-{"yaml.schemas","workbench.settings.applyToAllProfiles"}; assert keys == set(settings["workbench.settings.applyToAllProfiles"]), "VS Code managed settings must be shared across profiles"; assert settings["todo-tree.ripgrep.ripgrep"] == "/mise-test/ripgrep/rg", "VS Code ripgrep path must come from mise which rg"; assert "file:///mise-test/vscode/extensions/continue.continue/config-yaml-schema.json" in settings["yaml.schemas"], "Continue schema path must come from code --locate-extension"' "$tmpdir/vscode-settings.json"
+python3 -c 'import json,sys; settings=json.load(open(sys.argv[1])); keys=set(settings)-{"yaml.schemas","workbench.settings.applyToAllProfiles","chat.instructionsFilesLocations"}; shared=set(settings["workbench.settings.applyToAllProfiles"]); assert keys == shared, "VS Code shared settings must be listed in applyToAllProfiles"; assert "chat.instructionsFilesLocations" not in shared, "VS Code instruction locations must remain profile-specific"; assert settings["todo-tree.ripgrep.ripgrep"] == "/mise-test/ripgrep/rg", "VS Code ripgrep path must come from mise which rg"; assert "file:///mise-test/vscode/extensions/continue.continue/config-yaml-schema.json" in settings["yaml.schemas"], "Continue schema path must come from code --locate-extension"' "$tmpdir/vscode-settings.json"
 for template in 'home/dot_config/Code/User/settings.json.tmpl' 'home/AppData/Roaming/Code/User/settings.json.tmpl'; do
   PATH="$tmpdir/bin:$PATH" "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" execute-template --file "$template" > "$tmpdir/vscode-platform-settings.json"
   cmp -s "$tmpdir/vscode-settings.json" "$tmpdir/vscode-platform-settings.json"

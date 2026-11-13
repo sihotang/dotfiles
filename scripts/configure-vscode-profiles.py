@@ -12,7 +12,15 @@ import sys
 import tempfile
 from pathlib import Path
 
-PROFILE_RESOURCES = ("settings", "keybindings", "tasks", "mcp", "snippets")
+PROFILE_RESOURCES = (
+    "settings",
+    "keybindings",
+    "tasks",
+    "mcp",
+    "snippets",
+    "prompts",
+    "languageModels",
+)
 COPILOT_EXTENSIONS = ("GitHub.copilot", "GitHub.copilot-chat")
 VSCODE_DATA_DIRECTORIES = {
     "stable": "Code",
@@ -121,11 +129,16 @@ def vscode_is_running(code):
         return windows_vscode_is_running()
 
     process_names = vscode_process_names()
+    pgrep_names = process_names
+    if sys.platform == "darwin":
+        macos_process_names = {"Code Helper", "Code Helper (Renderer)", "Code Helper (Plugin)"}
+        pgrep_names = process_names | macos_process_names
+        process_names |= {name.lower() for name in macos_process_names}
     pgrep = shutil.which("pgrep")
     if pgrep:
         return any(
             subprocess.run([pgrep, "-x", name], stdout=subprocess.DEVNULL).returncode == 0
-            for name in process_names
+            for name in pgrep_names
         )
 
     ps = shutil.which("ps")
@@ -206,6 +219,62 @@ def install_copilot_extensions(code, profile_names):
             subprocess.run(command, check=True)
 
 
+def write_json_atomically(path, data, indent):
+    """Write JSON atomically while preserving the target's mode when it exists."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    mode = path.stat().st_mode & 0o777 if path.exists() else 0o600
+    fd, temporary_name = tempfile.mkstemp(prefix=f"{path.name}.", dir=path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as output:
+            json.dump(data, output, ensure_ascii=False, indent=indent)
+            output.write("\n")
+        os.chmod(temporary_name, mode)
+        os.replace(temporary_name, path)
+    finally:
+        if os.path.exists(temporary_name):
+            os.unlink(temporary_name)
+
+
+def profile_settings_path(user_data_dir, profile):
+    """Return a profile's settings path, rejecting unsafe or symlinked locations."""
+    location = profile.get("location")
+    if (
+        not isinstance(location, str)
+        or not location
+        or location in {".", ".."}
+        or "/" in location
+        or "\\" in location
+    ):
+        raise RuntimeError("VS Code profile location has an unsupported format")
+    profiles_dir = user_data_dir / "profiles"
+    profile_dir = profiles_dir / location
+    if profiles_dir.is_symlink() or profile_dir.is_symlink():
+        raise RuntimeError("refusing to write settings through a symlinked VS Code profile directory")
+    return profile_dir / "settings.json"
+
+
+def configure_profile_settings(user_data_dir, profile, wanted):
+    """Set profile settings to the configured instruction locations."""
+    settings_path = profile_settings_path(user_data_dir, profile)
+    if settings_path.is_symlink():
+        raise RuntimeError("refusing to replace a symlinked VS Code profile settings file")
+
+    instruction_locations = wanted.get("instructionLocations")
+    if not isinstance(instruction_locations, dict) or any(
+        not isinstance(path, str) or not isinstance(enabled, bool)
+        for path, enabled in instruction_locations.items()
+    ):
+        raise RuntimeError("VS Code profile instructionLocations must be a JSON object of boolean values")
+    profile_settings = {"chat.instructionsFilesLocations": instruction_locations}
+    if settings_path.is_file() and settings_path.read_text(encoding="utf-8") == (
+        json.dumps(profile_settings, ensure_ascii=False, indent=4) + "\n"
+    ):
+        return False
+
+    write_json_atomically(settings_path, profile_settings, indent=4)
+    return True
+
+
 def configure_profiles(wanted_profiles):
     """Update profile inheritance in VS Code storage and ensure Copilot is available."""
     if not isinstance(wanted_profiles, list) or any(not isinstance(item, dict) for item in wanted_profiles):
@@ -230,7 +299,9 @@ def configure_profiles(wanted_profiles):
         raise RuntimeError("VS Code userDataProfiles storage has an unsupported format")
 
     changed = False
+    settings_changed = False
     profile_names = ["Default"]
+    user_data_dir = path.parent.parent
     for wanted in wanted_profiles:
         name = wanted["name"]
         if name not in profile_names:
@@ -238,27 +309,24 @@ def configure_profiles(wanted_profiles):
         if name == "Default":
             continue
         changed |= configure_profile(profiles, wanted)
+        profile = next(profile for profile in profiles if profile.get("name") == name)
+        settings_changed |= configure_profile_settings(user_data_dir, profile, wanted)
 
     if changed:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        mode = path.stat().st_mode & 0o777 if path.exists() else 0o600
-        fd, temporary_name = tempfile.mkstemp(prefix="storage.json.", dir=path.parent)
-        try:
-            with os.fdopen(fd, "w", encoding="utf-8") as output:
-                json.dump(data, output, ensure_ascii=False, indent=2)
-                output.write("\n")
-            os.chmod(temporary_name, mode)
-            os.replace(temporary_name, path)
-        finally:
-            if os.path.exists(temporary_name):
-                os.unlink(temporary_name)
-        print("Configured VS Code profile contents to inherit shared settings, shortcuts, tasks, MCP servers, and snippets.")
+        write_json_atomically(path, data, indent=2)
+        print(
+            "Configured VS Code profiles to keep settings profile-specific and inherit keyboard shortcuts, "
+            "tasks, MCP servers, snippets, prompts, and language models."
+        )
+
+    if settings_changed:
+        print("Configured profile-specific VS Code settings and instruction locations.")
 
     install_copilot_extensions(code, profile_names)
 
 
 def configure_profile(profiles, wanted):
-    """Create or update a profile's shared-resource flags; return whether storage changed."""
+    """Set profile resource-source flags; return whether storage changed."""
     name = wanted["name"]
     matches = [profile for profile in profiles if profile.get("name") == name]
     if len(matches) > 1:
@@ -283,8 +351,9 @@ def configure_profile(profiles, wanted):
     if not isinstance(flags, dict):
         raise RuntimeError("VS Code profile useDefaultFlags has an unsupported format")
     for resource in PROFILE_RESOURCES:
-        if flags.get(resource) is not True:
-            flags[resource] = True
+        use_default = resource != "settings"
+        if flags.get(resource) is not use_default:
+            flags[resource] = use_default
             changed = True
     # Keep extensions profile-specific; VS Code requires one category to remain local.
     if flags.get("extensions") is not False:

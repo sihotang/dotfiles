@@ -355,11 +355,12 @@ usual shared user data, so its primary sign-in is available across profiles;
 profile-specific settings and extension selections remain managed by VS Code.
 The profile setup script prepares CLI state directories but does not launch
 VS Code. It also registers configured VS Code profiles in the stable VS Code
-`globalStorage/storage.json` and sets Settings, Keyboard Shortcuts, Tasks, MCP
-Servers, and Snippets to use the Default profile. Extensions stay profile
-specific. This edits VS Code's internal profile state, so close all VS Code
-windows before running `chezmoi apply`; the script fails rather than edit that
-state while VS Code is running. It targets the standard stable VS Code data
+`globalStorage/storage.json` and sets Keyboard Shortcuts, Tasks, MCP Servers,
+Snippets, Prompts, and Language Models to use the Default profile, except
+Settings, which remain profile-specific. Extensions also stay profile specific.
+This edits VS Code's internal profile state, so close all VS Code windows before
+running `chezmoi apply`; the script fails rather than edit that state while VS
+Code is running. It targets the standard stable VS Code data
 directory for stable, Insiders, and Code OSS installations on macOS, Windows,
 and Linux. In WSL, it uses Windows storage and process detection when `code`
 resolves to a Windows installation. It detects portable installs with a `data`
@@ -371,6 +372,11 @@ VS Code 1.116 and newer include GitHub Copilot, so setup relies on the built-in
 extension. Older versions install GitHub Copilot and GitHub Copilot Chat in the
 Default profile and each configured VS Code profile using the `code` CLI. The
 CLI must be available on `PATH`; older versions need Marketplace access.
+Each configured profile gets its own settings file containing only
+`chat.instructionsFilesLocations`, rendered from `settings-profile.json`;
+settings are not copied from Default or preserved from an existing profile
+file. The locations include the workspace directories and that profile's
+`<profilesDir>/<id>/copilot` and `<profilesDir>/<id>/claude` directories.
 Managed VS Code settings enable chat agents and keep
 `chat.disableAIFeatures` set to `false` across all profiles.
 Start each profile with
