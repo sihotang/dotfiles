@@ -29,15 +29,17 @@ grep -Fx '    email = "you@example.com"' "$tmpdir/gitconfig" > /dev/null
 printf '%s\n' 'Keep existing local data' > "$tmpdir/data-bootstrap-source/home/.chezmoidata/ai.yaml"
 sh "$tmpdir/data-bootstrap-source/scripts/copy-example-data.sh" "$tmpdir/data-bootstrap-source" > /dev/null
 grep -Fx 'Keep existing local data' "$tmpdir/data-bootstrap-source/home/.chezmoidata/ai.yaml" > /dev/null
-mkdir -p "$tmpdir/profile-instruction-source/home/.chezmoiscripts" "$tmpdir/profile-instruction-home/.codex"
+mkdir -p "$tmpdir/profile-instruction-source/home/.chezmoiscripts" "$tmpdir/profile-instruction-source/home/.chezmoitemplates/codex" "$tmpdir/profile-instruction-source/scripts" "$tmpdir/profile-instruction-home/.codex"
 printf '%s\n' home > "$tmpdir/profile-instruction-source/.chezmoiroot"
+cp scripts/share-codex-config.py "$tmpdir/profile-instruction-source/scripts/"
+cp home/.chezmoitemplates/codex/config.toml "$tmpdir/profile-instruction-source/home/.chezmoitemplates/codex/"
 printf '%s\n' 'Shared agent baseline' > "$tmpdir/profile-instruction-home/.codex/AGENTS.md"
 cp home/.chezmoiscripts/run_onchange_setup-profiles.sh.tmpl "$tmpdir/profile-instruction-source/home/.chezmoiscripts/setup.tmpl"
 "$CHEZMOI" --source "$tmpdir/profile-instruction-source" --config "$tmpdir/chezmoi.toml" --override-data "$PROFILE_INSTRUCTION_TEST_DATA" execute-template --file "$tmpdir/profile-instruction-source/home/.chezmoiscripts/setup.tmpl" > "$tmpdir/profile-instruction-setup.sh"
 python3 -c 'import pathlib,sys; text=pathlib.Path(sys.argv[1]).read_text().replace("$HOME", sys.argv[2]); pathlib.Path(sys.argv[3]).write_text(text)' "$tmpdir/profile-instruction-setup.sh" "$tmpdir/profile-instruction-home" "$tmpdir/profile-instruction-setup-isolated.sh"
 ! grep -F '/Users/sio' "$tmpdir/profile-instruction-setup-isolated.sh" > /dev/null
 sh -n "$tmpdir/profile-instruction-setup-isolated.sh"
-sh "$tmpdir/profile-instruction-setup-isolated.sh"
+HOME="$tmpdir/profile-instruction-home" sh "$tmpdir/profile-instruction-setup-isolated.sh"
 grep -Fx 'All profile base' "$tmpdir/profile-instruction-home/.config/profiles/inherit/codex/AGENTS.md" > /dev/null
 grep -Fx "Specific's base" "$tmpdir/profile-instruction-home/.config/profiles/specific/codex/AGENTS.md" > /dev/null
 grep -Fx 'Tool replacement' "$tmpdir/profile-instruction-home/.config/profiles/tool/codex/AGENTS.md" > /dev/null
@@ -46,7 +48,7 @@ printf '%s\n' 'Shared agent baseline' > "$tmpdir/profile-force-home/.codex/AGENT
 "$CHEZMOI" --source "$tmpdir/profile-instruction-source" --config "$tmpdir/chezmoi.toml" --override-data "$PROFILE_FORCE_TEST_DATA" execute-template --file "$tmpdir/profile-instruction-source/home/.chezmoiscripts/setup.tmpl" > "$tmpdir/profile-force-setup.sh"
 python3 -c 'import pathlib,sys; text=pathlib.Path(sys.argv[1]).read_text().replace("$HOME", sys.argv[2]); pathlib.Path(sys.argv[3]).write_text(text)' "$tmpdir/profile-force-setup.sh" "$tmpdir/profile-force-home" "$tmpdir/profile-force-setup-isolated.sh"
 sh -n "$tmpdir/profile-force-setup-isolated.sh"
-sh "$tmpdir/profile-force-setup-isolated.sh"
+HOME="$tmpdir/profile-force-home" sh "$tmpdir/profile-force-setup-isolated.sh"
 grep -Fx 'Profile base' "$tmpdir/profile-force-home/.config/profiles/ai_append/codex/AGENTS.md" > /dev/null
 grep -Fx 'AI append' "$tmpdir/profile-force-home/.config/profiles/ai_append/codex/AGENTS.md" > /dev/null
 grep -Fx 'Codex append' "$tmpdir/profile-force-home/.config/profiles/ai_append/codex/AGENTS.md" > /dev/null
@@ -80,7 +82,7 @@ printf '%s\n' '<!-- Managed by chezmoi; edit profiles.toml instead. -->' 'Old ge
 python3 -c 'import pathlib,sys; text=pathlib.Path(sys.argv[1]).read_text().replace("$HOME", sys.argv[2]); pathlib.Path(sys.argv[3]).write_text(text)' "$tmpdir/empty-profile-setup.sh" "$tmpdir/empty-profile-home" "$tmpdir/empty-profile-setup-isolated.sh"
 ! grep -F '/Users/sio' "$tmpdir/empty-profile-setup-isolated.sh" > /dev/null
 sh -n "$tmpdir/empty-profile-setup-isolated.sh"
-sh "$tmpdir/empty-profile-setup-isolated.sh"
+HOME="$tmpdir/empty-profile-home" sh "$tmpdir/empty-profile-setup-isolated.sh"
 test -L "$tmpdir/empty-profile-home/.config/profiles/empty/codex/AGENTS.md"
 test "$(readlink "$tmpdir/empty-profile-home/.config/profiles/empty/codex/AGENTS.md")" = "$tmpdir/empty-profile-home/.codex/AGENTS.md"
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data "$PROFILE_TEST_DATA" cat ~/.config/zsh/aliases.zsh > "$tmpdir/aliases"
@@ -244,6 +246,19 @@ grep -F "create_profile gh 'review'" "$tmpdir/setup-profiles.sh" > /dev/null
 mkdir -p "$tmpdir/profile-cleanup-home/.config/gh" "$tmpdir/profile-cleanup-home/.config/profiles/review/gh" "$tmpdir/profile-cleanup-home/.config/profiles/git_only/gh"
 touch "$tmpdir/profile-cleanup-home/.config/gh/config.yml"
 ln -s "$tmpdir/profile-cleanup-home/.config/gh/config.yml" "$tmpdir/profile-cleanup-home/.config/profiles/review/gh/config.yml"
+mkdir -p "$tmpdir/profile-cleanup-home/.config/profiles/default/codex" "$tmpdir/profile-cleanup-home/.config/profiles/review/codex"
+cat > "$tmpdir/profile-cleanup-home/.config/profiles/default/codex/config.toml" <<'EOF'
+cli_auth_credentials_store = "file"
+
+[tui]
+notifications = true
+EOF
+cat > "$tmpdir/profile-cleanup-home/.config/profiles/review/codex/config.toml" <<'EOF'
+cli_auth_credentials_store = "file"
+
+[projects."/workspace/review"]
+trust_level = "trusted"
+EOF
 printf '%s\n' 'preserve custom account data' > "$tmpdir/profile-cleanup-home/.config/profiles/git_only/gh/hosts.yml"
 mkdir -p "$tmpdir/vscode-profile-storage"
 printf '%s\n' '{"sentinel":"preserve","userDataProfiles":[{"name":"Review Profile","location":"existing-review","useDefaultFlags":{"extensions":true}},{"name":"Unmanaged","location":"existing-unmanaged"}]}' > "$tmpdir/vscode-profile-storage/storage.json"
@@ -256,6 +271,35 @@ test "$(readlink "$tmpdir/profile-cleanup-home/.config/profiles/review/gh/config
 test -L "$tmpdir/profile-cleanup-home/.config/profiles/git_only/gh/config.yml"
 test -L "$tmpdir/profile-cleanup-home/.config/profiles/vscode_only/gh/config.yml"
 grep -Fx 'preserve custom account data' "$tmpdir/profile-cleanup-home/.config/profiles/git_only/gh/hosts.yml" > /dev/null
+test -L "$tmpdir/profile-cleanup-home/.config/profiles/default/codex/config.toml"
+test -L "$tmpdir/profile-cleanup-home/.config/profiles/review/codex/config.toml"
+test "$(readlink "$tmpdir/profile-cleanup-home/.config/profiles/review/codex/config.toml")" = "$tmpdir/profile-cleanup-home/.config/codex/config.toml"
+python3 - "$tmpdir/profile-cleanup-home/.config/codex/config.toml" <<'PY'
+import sys
+import tomllib
+
+with open(sys.argv[1], "rb") as config_file:
+    config = tomllib.load(config_file)
+assert config["cli_auth_credentials_store"] == "file"
+assert config["tui"]["notifications"] is True
+assert config["projects"]["/workspace/review"]["trust_level"] == "trusted"
+PY
+HOME="$tmpdir/profile-cleanup-home" CHEZMOI_PROFILES_DIR="$tmpdir/profile-cleanup-home/.config/profiles" python3 "$CHEZMOI_SOURCE/scripts/share-codex-config.py" <<'EOF'
+["default", "review"]
+EOF
+mkdir -p "$tmpdir/codex-conflict-home/.config/codex" "$tmpdir/codex-conflict-home/.config/profiles/conflict/codex"
+printf '%s\n' 'model = "common-model"' 'cli_auth_credentials_store = "file"' > "$tmpdir/codex-conflict-home/.config/codex/config.toml"
+printf '%s\n' 'model = "profile-model"' 'cli_auth_credentials_store = "file"' > "$tmpdir/codex-conflict-home/.config/profiles/conflict/codex/config.toml"
+if HOME="$tmpdir/codex-conflict-home" CHEZMOI_PROFILES_DIR="$tmpdir/codex-conflict-home/.config/profiles" python3 "$CHEZMOI_SOURCE/scripts/share-codex-config.py" <<'EOF' > "$tmpdir/codex-conflict.log" 2>&1
+["conflict"]
+EOF
+then
+  exit 1
+fi
+! grep -F 'conflicting settings' "$tmpdir/codex-conflict.log" > /dev/null
+test ! -L "$tmpdir/codex-conflict-home/.config/profiles/conflict/codex/config.toml"
+grep -Fx 'model = "common-model"' "$tmpdir/codex-conflict-home/.config/codex/config.toml" > /dev/null
+grep -Fx 'model = "profile-model"' "$tmpdir/codex-conflict-home/.config/profiles/conflict/codex/config.toml" > /dev/null
 grep -Fx -- '--install-extension GitHub.copilot --profile Review Profile' "$tmpdir/vscode-install.log" > /dev/null
 grep -Fx -- '--install-extension GitHub.copilot-chat --profile git_only' "$tmpdir/vscode-install.log" > /dev/null
 grep -Fx -- '--install-extension GitHub.copilot' "$tmpdir/vscode-install.log" > /dev/null
@@ -307,7 +351,8 @@ with mock.patch.object(module, "is_wsl", return_value=False), mock.patch.object(
     )
 PY
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"profiles":null}' execute-template --file home/.chezmoiscripts/run_onchange_setup-profiles.sh.tmpl > "$tmpdir/setup-profiles-empty.sh"
-grep -F 'cli_auth_credentials_store = "file"' "$tmpdir/setup-profiles.sh" > /dev/null
+grep -F 'scripts/share-codex-config.py' "$tmpdir/setup-profiles.sh" > /dev/null
+grep -F 'shared_config["cli_auth_credentials_store"] = "file"' "$CHEZMOI_SOURCE/scripts/share-codex-config.py" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" cat ~/.gemini/settings.json > "$tmpdir/gemini-settings.json"
 mkdir -p "$tmpdir/bin"
 printf '%s\n' '#!/bin/sh' '[ "$#" -eq 2 ] && [ "$1" = which ] && [ "$2" = rg ] || exit 1' 'printf "%s\n" "/mise-test/ripgrep/rg"' > "$tmpdir/bin/mise"

@@ -2,11 +2,15 @@
 {{ $profilesDir := (index . "profilesDir") | default ".config/profiles" -}}
 {{- $profiles := (index . "profiles") | default dict -}}
 {{- $vscodeProfiles := list -}}
+{{- $codexProfiles := list -}}
 {{- range $profile, $config := $profiles -}}
   {{- if ne $profile "instructions" -}}
     {{- $tools := $config -}}
     {{- if not (kindIs "slice" $config) -}}
       {{- $tools = index $config "tools" -}}
+    {{- end -}}
+    {{- if has "codex" $tools -}}
+      {{- $codexProfiles = append $codexProfiles $profile -}}
     {{- end -}}
     {{- if has "vscode" $tools -}}
       {{- $name := $profile -}}
@@ -87,18 +91,18 @@ remove_unconfigured_profiles() {
     [ -d "$profile_dir" ] || continue
     profile_name=${profile_dir##*/}
     case "$profile_name" in{{ printf "\n" -}}
-{{- range $profile, $config := $profiles -}}
-  {{- if ne $profile "instructions" -}}
-    {{- $tools := $config -}}
-    {{- if not (kindIs "slice" $config) -}}
-      {{- $tools = index $config "tools" -}}
-    {{- end -}}
-    {{- if $tools -}}
-      {{ printf "      '%s') ;;\n" $profile }}
-    {{- end -}}
-  {{- end -}}
-{{- end -}}
-{{ printf "      *) rm -rf -- \"$profile_dir\" ;;\n" }}
+      {{- range $profile, $config := $profiles -}}
+        {{- if ne $profile "instructions" -}}
+          {{- $tools := $config -}}
+          {{- if not (kindIs "slice" $config) -}}
+            {{- $tools = index $config "tools" -}}
+          {{- end -}}
+          {{- if $tools -}}
+            {{- printf "      '%s') ;;\n" $profile -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+      {{- printf "      *) rm -rf -- \"$profile_dir\" ;;\n" }}
     esac
   done
 }
@@ -108,7 +112,7 @@ remove_unconfigured_profiles
 {{ if $vscodeProfiles -}}
 # Configure native VS Code profiles to inherit shared contents from Default.
 configure_vscode_profiles() {
-vscode_profiles_json=$(cat <<'CHEZMOI_VSCODE_PROFILES'
+  vscode_profiles_json=$(cat <<'CHEZMOI_VSCODE_PROFILES'
 {{ $vscodeProfiles | toJson }}
 CHEZMOI_VSCODE_PROFILES
 )
@@ -136,16 +140,15 @@ link_if_missing() {
 }
 
 {{ range $profile, $config := $profiles -}}
-  {{ if ne $profile "instructions" -}}
-    {{ $tools := $config -}}
-    {{ if not (kindIs "slice" $config) -}}
-      {{ $tools = index $config "tools" -}}
-    {{ end -}}
-    {{ if or (has "gh" $tools) (has "vscode" $tools) -}}
-create_profile gh '{{ $profile }}'
-link_if_missing "$HOME/.config/gh/config.yml" "$profiles_base/{{ $profile }}/gh/config.yml"
-    {{ end -}}
-  {{ end -}}
+  {{- if ne $profile "instructions" -}}
+    {{- $tools := $config -}}
+    {{- if not (kindIs "slice" $config) -}}
+      {{- $tools = index $config "tools" -}}
+    {{- end -}}
+    {{- if or (has "gh" $tools) (has "vscode" $tools) -}}
+      {{ printf "create_profile gh '%s'\nlink_if_missing \"$HOME/.config/gh/config.yml\" \"$profiles_base/%s/gh/config.yml\"\n" $profile $profile }}
+    {{- end -}}
+  {{- end -}}
 {{ end -}}
 
 profile_instruction_marker='<!-- Managed by chezmoi; edit profile.yaml instead. -->'
@@ -181,7 +184,9 @@ write_profile_instructions() {
   tool_instructions="$6"
   tool_appended_instructions="$7"
 
-  if [ "$instruction_mode" = shared ] && [ -z "$profile_appended_instructions" ] && [ -z "$tool_appended_instructions" ]; then
+  if [ "$instruction_mode" = shared ] \
+    && [ -z "$profile_appended_instructions" ] \
+    && [ -z "$tool_appended_instructions" ]; then
     restore_shared_instructions "$instruction_source" "$instruction_target"
     return 0
   fi
@@ -202,15 +207,15 @@ write_profile_instructions() {
   {
     printf '%s\n' "$profile_instruction_marker"
     case "$instruction_mode" in
-      tool)
-        printf '%s\n' "$tool_instructions"
-        ;;
-      profile)
-        printf '%s\n' "$profile_instructions"
-        ;;
-      shared)
-        [ ! -f "$instruction_source" ] || cat "$instruction_source"
-        ;;
+    tool)
+      printf '%s\n' "$tool_instructions"
+      ;;
+    profile)
+      printf '%s\n' "$profile_instructions"
+      ;;
+    shared)
+      [ ! -f "$instruction_source" ] || cat "$instruction_source"
+      ;;
     esac
     if [ "$instruction_mode" != tool ] && [ -n "$profile_appended_instructions" ]; then
       printf '\n%s\n' "$profile_appended_instructions"
@@ -218,7 +223,7 @@ write_profile_instructions() {
     if [ -n "$tool_appended_instructions" ]; then
       printf '\n%s\n' "$tool_appended_instructions"
     fi
-  } > "$instruction_temp"
+  } >"$instruction_temp"
   mv -f "$instruction_temp" "$instruction_target"
 }
 
@@ -243,85 +248,87 @@ write_tool_profile_instructions() {
     "$tool_appended_instructions"
 }
 
-{{ range $profile, $config := $profiles -}}
-  {{ if ne $profile "instructions" -}}
-    {{ $tools := $config -}}
-    {{ if not (kindIs "slice" $config) -}}
-      {{ $tools = index $config "tools" -}}
-    {{ end -}}
-    {{ $profileInstructions := $globalProfileInstructions -}}
-    {{ $profileAppendedInstructions := "" -}}
-    {{ if kindIs "map" $config -}}
-      {{ $profileInstructions = index $config "instructions" | default $globalProfileInstructions -}}
-      {{ $aiConfig := index $config "ai" | default dict -}}
-      {{ $aiInstructions := index $aiConfig "instructions" | default "" -}}
-      {{ $aiForce := false -}}
-      {{ if hasKey $aiConfig "force" -}}
-        {{ $aiForce = index $aiConfig "force" -}}
-      {{ end -}}
-      {{ if $aiInstructions -}}
-        {{ if $aiForce -}}
-          {{ $profileInstructions = $aiInstructions -}}
-        {{ else -}}
-          {{ $profileAppendedInstructions = $aiInstructions -}}
-        {{ end -}}
-      {{ end -}}
-    {{ end -}}
-    {{ range $tool := $tools -}}
-      {{ if or
+{{- printf "\n" -}}
+{{- range $profile, $config := $profiles -}}
+  {{- if ne $profile "instructions" -}}
+    {{- $tools := $config -}}
+    {{- if not (kindIs "slice" $config) -}}
+      {{- $tools = index $config "tools" -}}
+    {{- end -}}
+    {{- $profileInstructions := $globalProfileInstructions -}}
+    {{- $profileAppendedInstructions := "" -}}
+    {{- if kindIs "map" $config -}}
+      {{- $profileInstructions = index $config "instructions" | default $globalProfileInstructions -}}
+      {{- $aiConfig := index $config "ai" | default dict -}}
+      {{- $aiInstructions := index $aiConfig "instructions" | default "" -}}
+      {{- $aiForce := false -}}
+      {{- if hasKey $aiConfig "force" -}}
+        {{- $aiForce = index $aiConfig "force" -}}
+      {{- end -}}
+      {{- if $aiInstructions -}}
+        {{- if $aiForce -}}
+          {{- $profileInstructions = $aiInstructions -}}
+        {{- else -}}
+          {{- $profileAppendedInstructions = $aiInstructions -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+    {{- range $tool := $tools -}}
+      {{- if or
         (eq $tool "codex")
         (eq $tool "claude")
         (eq $tool "copilot")
         (eq $tool "gemini") -}}
-        {{ $instructionSource := "" -}}
-        {{ $instructionTarget := "" -}}
-        {{ if eq $tool "codex" -}}
-          {{ $instructionSource = "$HOME/.codex/AGENTS.md" -}}
-          {{ $instructionTarget = "AGENTS.md" -}}
-        {{ else if eq $tool "claude" -}}
-          {{ $instructionSource = "$HOME/.claude/CLAUDE.md" -}}
-          {{ $instructionTarget = "CLAUDE.md" -}}
-        {{ else if eq $tool "copilot" -}}
-          {{ $instructionSource = "$HOME/.copilot/copilot-instructions.md" -}}
-          {{ $instructionTarget = "copilot-instructions.md" -}}
-        {{ else if eq $tool "gemini" -}}
-          {{ $instructionSource = "$HOME/.gemini/GEMINI.md" -}}
-          {{ $instructionTarget = "GEMINI.md" -}}
-        {{ end -}}
+        {{- $instructionSource := "" -}}
+        {{- $instructionTarget := "" -}}
+        {{- if eq $tool "codex" -}}
+          {{- $instructionSource = "$HOME/.codex/AGENTS.md" -}}
+          {{- $instructionTarget = "AGENTS.md" -}}
+        {{- else if eq $tool "claude" -}}
+          {{- $instructionSource = "$HOME/.claude/CLAUDE.md" -}}
+          {{- $instructionTarget = "CLAUDE.md" -}}
+        {{- else if eq $tool "copilot" -}}
+          {{- $instructionSource = "$HOME/.copilot/copilot-instructions.md" -}}
+          {{- $instructionTarget = "copilot-instructions.md" -}}
+        {{- else if eq $tool "gemini" -}}
+          {{- $instructionSource = "$HOME/.gemini/GEMINI.md" -}}
+          {{- $instructionTarget = "GEMINI.md" -}}
+        {{- end }}
 create_profile '{{ $tool }}' '{{ $profile }}'
 profile_dir="$profiles_base/{{ $profile }}/{{ $tool }}"
-{{ if eq $tool "gemini" -}}
+        {{- if eq $tool "gemini" }}
 profile_dir="$profile_dir/.gemini"
-{{ end -}}
-        {{ $toolConfig := dict -}}
-          {{ if kindIs "map" $config -}}
-            {{ $toolConfig = index $config $tool | default dict -}}
-          {{ end -}}
-        {{ $toolInstructions := index $toolConfig "instructions" | default "" -}}
-        {{ $toolAppendedInstructions := "" -}}
-        {{ $toolForce := false -}}
-          {{ if hasKey $toolConfig "force" -}}
-            {{ $toolForce = index $toolConfig "force" -}}
-          {{ end -}}
-          {{ if and (not $toolForce) $toolInstructions -}}
-            {{ $toolAppendedInstructions = $toolInstructions -}}
-            {{ $toolInstructions = "" -}}
-          {{ end -}}
+        {{- end }}
+        {{- $toolConfig := dict -}}
+        {{- if kindIs "map" $config -}}
+          {{- $toolConfig = index $config $tool | default dict -}}
+        {{- end -}}
+        {{- $toolInstructions := index $toolConfig "instructions" | default "" -}}
+        {{- $toolAppendedInstructions := "" -}}
+        {{- $toolForce := false -}}
+        {{- if hasKey $toolConfig "force" -}}
+          {{- $toolForce = index $toolConfig "force" -}}
+        {{- end -}}
+        {{- if and (not $toolForce) $toolInstructions -}}
+          {{- $toolAppendedInstructions = $toolInstructions -}}
+          {{- $toolInstructions = "" -}}
+        {{- end }}
 profile_instructions='{{ replace "'" "'\"'\"'" $profileInstructions }}'
 profile_appended_instructions='{{ replace "'" "'\"'\"'" $profileAppendedInstructions }}'
 write_tool_profile_instructions "{{ $instructionSource }}" "$profile_dir/{{ $instructionTarget }}" '{{ replace "'" "'\"'\"'" $toolInstructions }}' '{{ replace "'" "'\"'\"'" $toolAppendedInstructions }}'
-{{ if eq $tool "codex" -}}
-if [ ! -f "$profile_dir/config.toml" ]; then
-  printf '# Codex profile: %s\n# Store authentication in this profile for account isolation.\ncli_auth_credentials_store = "file"\n' '{{ $profile }}' > "$profile_dir/config.toml"
-elif ! grep -Eq '^[[:space:]]*cli_auth_credentials_store[[:space:]]*=' "$profile_dir/config.toml"; then
-  printf '\ncli_auth_credentials_store = "file"\n' >> "$profile_dir/config.toml"
-fi
-{{ else if eq $tool "gemini" -}}
+        {{- if eq $tool "gemini" }}
 link_if_missing "$HOME/.gemini/settings.json" "$profile_dir/settings.json"
-{{ end -}}
-{{ end -}}
-{{ end -}}
-{{ end -}}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{ if $codexProfiles -}}
+chezmoi_source_root='{{ replace "'" "'\"'\"'" (dir .chezmoi.sourceDir) }}'
+printf '%s' '{{ $codexProfiles | toJson }}' \
+  | CHEZMOI_PROFILES_DIR="$profiles_base" \
+  CHEZMOI_CODEX_CONFIG="$chezmoi_source_root/home/.chezmoitemplates/codex/config.toml" \
+  python3 "$chezmoi_source_root/scripts/share-codex-config.py"
 {{ end -}}
 {{ if $vscodeProfiles -}}
 

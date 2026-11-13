@@ -1,0 +1,5 @@
+# Portable defaults shared by Codex profiles.
+cli_auth_credentials_store = "file"
+
+[tui]
+screen_reader_detection_done = true

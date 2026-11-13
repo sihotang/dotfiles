@@ -286,6 +286,11 @@ profile that enables `gh` or `vscode` gets its own
 profile mapped to an empty tool list is removed from `~/.config/profiles/` on
 apply. Profile settings and state stay outside the repo.
 
+Portable Codex defaults are kept in
+`home/.chezmoitemplates/codex/config.toml` and merged into the shared
+`~/.config/codex/config.toml` during profile setup. Machine-local project trust
+and hook state remain in the shared file on that machine and are not committed.
+
 Sign in through each profile's alias so the credential is stored in that
 profile's GH configuration directory:
 
@@ -387,13 +392,17 @@ Add `antigravity` to a profile's agent list to enable Google's Antigravity
 extension there; it is a VS Code extension toggle and does not create a CLI
 launcher.
 
-Codex profile settings live in
-`~/.config/profiles/<profile>/codex/config.toml`. The setup links the shared
-Codex `AGENTS.md`, Claude `CLAUDE.md`, Copilot instructions, and Gemini
-instructions/settings when present. Codex profiles use file-based authentication
-so each `CODEX_HOME` keeps its own `auth.json` and can sign in to a separate
-account. VS Code uses its native profile store; setup registers configured
-profile names there so `code-<profile>` opens the matching profile.
+Codex settings are shared in `~/.config/codex/config.toml`; each profile's
+`codex/config.toml` links to that file. Setup merges existing profile settings
+when there are no conflicting values, and stops without replacing profile
+files if it finds a conflict. Settings such as project trust and hooks therefore
+apply to every Codex profile. Codex profiles still have separate `CODEX_HOME`
+directories and use file-based authentication, so each home keeps its own
+`auth.json` and can sign in to a separate account. The setup also links the
+shared Codex `AGENTS.md`, Claude `CLAUDE.md`, Copilot instructions, and Gemini
+instructions/settings when present. VS Code uses its native profile store;
+setup registers configured profile names there so `code-<profile>` opens the
+matching profile.
 
 GitHub Copilot, Claude Code, Codex, Gemini CLI, and Antigravity load their
 project-level session-start hooks from `.github/hooks/hooks.json`,
