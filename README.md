@@ -51,8 +51,10 @@ $sourceDir = chezmoi source-path
 `chezmoi apply` installs packages with the native package manager for each
 platform. macOS uses Homebrew; Linux supports apt, dnf, pacman, and zypper; and
 native Windows uses WinGet. Package scripts run again when their package lists
-change. Mise is installed from its official installer on macOS and Linux and
-from WinGet on Windows.
+change. The tracked `home/.chezmoidata/packages.yaml` is the package inventory
+used by those scripts, including mise-managed tools and Windows Cygwin
+packages. Mise itself is installed from its official installer on macOS and
+Linux and from WinGet on Windows.
 
 Then preview and apply:
 

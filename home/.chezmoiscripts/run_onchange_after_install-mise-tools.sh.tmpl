@@ -1,6 +1,7 @@
 {{ if or (eq .chezmoi.os "darwin") (eq .chezmoi.os "linux") -}}
 #!/bin/sh
-# mise config checksum: {{ include "dot_config/mise/config.toml" | sha256sum }}
+# mise config checksum: {{ include "dot_config/mise/config.toml.tmpl" | sha256sum }}
+# mise package list checksum: {{ .packages.common.mise | toJson | sha256sum }}
 set -eu
 
 if command -v mise >/dev/null 2>&1; then

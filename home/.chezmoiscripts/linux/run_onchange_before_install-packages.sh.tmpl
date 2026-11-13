@@ -1,4 +1,8 @@
 {{ if eq .chezmoi.os "linux" -}}
+{{- $apt := .packages.linux.apt -}}
+{{- $dnf := .packages.linux.dnf -}}
+{{- $pacman := .packages.linux.pacman -}}
+{{- $zypper := .packages.linux.zypper -}}
 #!/bin/sh
 
 set -eu
@@ -22,13 +26,13 @@ is_wsl() {
 
 install_linux_mise() {
   if ! command -v mise >/dev/null 2>&1 && [ ! -x "$HOME/.local/bin/mise" ]; then
-    curl -fsSL https://mise.run | sh
+    curl -fsSL '{{ .packages.common.mise.installer }}' | sh
   fi
 }
 
 install_apt_packages() {
   run_root apt-get update
-  run_root apt-get install -y ca-certificates curl git gnupg neovim zsh
+  run_root apt-get install -y {{ join " " $apt.system }}
 
   if ! command -v gh >/dev/null 2>&1; then
     key_file=$(mktemp)
@@ -43,10 +47,12 @@ install_apt_packages() {
     install_linux_deb_apps
   fi
   run_root apt-get update
-  run_root apt-get install -y gh
+  run_root apt-get install -y {{ $apt.github_cli }}
+  {{- if has "ghostty" $apt.applications }}
   if ! is_wsl && apt-cache show ghostty >/dev/null 2>&1; then
     run_root apt-get install -y ghostty
   fi
+  {{- end }}
 }
 
 download_install_deb() {
@@ -57,21 +63,28 @@ download_install_deb() {
 }
 
 install_linux_deb_apps() {
+  {{- if or (has "vscode" $apt.applications) (has "chrome" $apt.applications) (has "obsidian" $apt.applications) }}
   case "$(dpkg --print-architecture)" in
     amd64) vscode_arch=x64; chrome_arch=amd64; obsidian_arch=x64 ;;
     arm64) vscode_arch=arm64; chrome_arch=arm64; obsidian_arch=arm64 ;;
     *) printf 'Unsupported Debian package architecture: %s\n' "$(dpkg --print-architecture)" >&2; exit 1 ;;
   esac
+  {{- end }}
 
   temporary_directory=$(mktemp -d)
   trap 'rm -rf "$temporary_directory"' EXIT HUP INT TERM
+  {{- if has "vscode" $apt.applications }}
   if ! command -v code >/dev/null 2>&1; then
     download_install_deb "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-$vscode_arch"
   fi
+  {{- end }}
+  {{- if has "chrome" $apt.applications }}
   if ! command -v google-chrome >/dev/null 2>&1; then
     download_install_deb "https://dl.google.com/linux/direct/google-chrome-stable_current_$chrome_arch.deb"
   fi
+  {{- end }}
 
+  {{- if has "cursor" $apt.applications }}
   if ! command -v cursor >/dev/null 2>&1; then
     run_root mkdir -p /etc/apt/keyrings /etc/apt/sources.list.d
     curl -fsSL https://downloads.cursor.com/keys/anysphere.asc -o "$temporary_directory/cursor.asc"
@@ -82,14 +95,17 @@ install_linux_deb_apps() {
     run_root apt-get update
     run_root apt-get install -y cursor
   fi
+  {{- end }}
 
+  {{- if has "obsidian" $apt.applications }}
   if ! command -v obsidian >/dev/null 2>&1; then
     download_install_deb "https://obsidian.md/download?os=linux&arch=$obsidian_arch&package=deb"
   fi
+  {{- end }}
 }
 
 install_dnf_packages() {
-  run_root dnf install -y ca-certificates curl git neovim zsh
+  run_root dnf install -y {{ join " " $dnf.system }}
   if ! command -v gh >/dev/null 2>&1; then
     run_root mkdir -p /etc/yum.repos.d
     run_root curl -fsSL https://cli.github.com/packages/rpm/gh-cli.repo -o /etc/yum.repos.d/gh-cli.repo
@@ -98,10 +114,12 @@ install_dnf_packages() {
   if ! is_wsl; then
     install_linux_rpm_apps
   fi
-  run_root dnf install -y gh
+  run_root dnf install -y {{ $dnf.github_cli }}
+  {{- if has "ghostty" $dnf.applications }}
   if ! is_wsl && dnf repoquery --available ghostty 2>/dev/null | grep -q .; then
     run_root dnf install -y ghostty
   fi
+  {{- end }}
 }
 
 download_install_rpm() {
@@ -112,49 +130,61 @@ download_install_rpm() {
 }
 
 install_linux_rpm_apps() {
+  {{- if or (has "vscode" $dnf.applications) (has "chrome" $dnf.applications) }}
   case "$(uname -m)" in
     x86_64) vscode_arch=x64; chrome_arch=x86_64 ;;
     aarch64) vscode_arch=arm64; chrome_arch=aarch64 ;;
     *) printf 'Unsupported RPM package architecture: %s\n' "$(uname -m)" >&2; exit 1 ;;
   esac
+  {{- end }}
 
   temporary_directory=$(mktemp -d)
   trap 'rm -rf "$temporary_directory"' EXIT HUP INT TERM
+  {{- if has "vscode" $dnf.applications }}
   if ! command -v code >/dev/null 2>&1; then
     download_install_rpm "https://code.visualstudio.com/sha/download?build=stable&os=linux-rpm-$vscode_arch"
   fi
+  {{- end }}
+  {{- if has "chrome" $dnf.applications }}
   if ! command -v google-chrome >/dev/null 2>&1; then
     download_install_rpm "https://dl.google.com/linux/direct/google-chrome-stable_current_$chrome_arch.rpm"
   fi
+  {{- end }}
 
+  {{- if has "cursor" $dnf.applications }}
   if ! command -v cursor >/dev/null 2>&1; then
     printf '%s\n' '[cursor]' 'name=Cursor' 'baseurl=https://downloads.cursor.com/yumrepo' 'enabled=1' 'gpgcheck=1' 'gpgkey=https://downloads.cursor.com/keys/anysphere.asc' \
       | run_root tee /etc/yum.repos.d/cursor.repo >/dev/null
     run_root dnf install -y cursor
   fi
+  {{- end }}
 }
 
 install_pacman_packages() {
+  run_root pacman -S --needed --noconfirm {{ join " " $pacman.system }}
+  {{- if has "ghostty" $pacman.applications }}
   if is_wsl; then
-    run_root pacman -S --needed --noconfirm ca-certificates curl git github-cli neovim zsh
-  else
-    run_root pacman -S --needed --noconfirm ca-certificates curl git github-cli ghostty neovim zsh
+    return 0
   fi
+  run_root pacman -S --needed --noconfirm ghostty
+  {{- end }}
 }
 
 install_zypper_packages() {
   run_root zypper --non-interactive refresh
-  run_root zypper --non-interactive install ca-certificates curl git neovim zsh
+  run_root zypper --non-interactive install {{ join " " $zypper.system }}
   if ! command -v gh >/dev/null 2>&1; then
     if ! zypper repos | grep -Fq 'github-cli'; then
       run_root zypper addrepo --refresh https://cli.github.com/packages/rpm/gh-cli.repo github-cli
     fi
   fi
   run_root zypper --non-interactive refresh
-  run_root zypper --non-interactive install gh
+  run_root zypper --non-interactive install {{ $zypper.github_cli }}
+  {{- if has "ghostty" $zypper.applications }}
   if ! is_wsl && ! command -v ghostty >/dev/null 2>&1 && zypper search --match-exact --details ghostty 2>/dev/null | grep -q ghostty; then
     run_root zypper --non-interactive install ghostty
   fi
+  {{- end }}
 }
 
 if command -v apt-get >/dev/null 2>&1; then
