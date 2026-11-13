@@ -338,18 +338,30 @@ environment paths for the CLI tools listed in that profile. VS Code keeps its
 usual shared user data, so its primary sign-in is available across profiles;
 profile-specific settings and extension selections remain managed by VS Code.
 The profile setup script prepares CLI state directories but does not launch
-VS Code. Start each profile with `code-<profile>` so VS Code starts with the
-matching CLI environment. The VS Code `Default` profile uses Codex's default
-home; other profiles with `codex` enabled use their matching `CODEX_HOME`. The
-`--profile` CLI option creates a native profile if it does not exist, so newly
-created profiles start empty. The managed user settings list its shared keys
-in `workbench.settings.applyToAllProfiles`, so changes to those settings in
-Default or another profile are applied across all profiles. Profile-specific
-settings outside that list remain local. See the
+VS Code. It also registers configured VS Code profiles in the stable VS Code
+`globalStorage/storage.json` and sets Settings, Keyboard Shortcuts, Tasks, MCP
+Servers, and Snippets to use the Default profile. Extensions stay profile
+specific. This edits VS Code's internal profile state, so close all VS Code
+windows before running `chezmoi apply`; the script fails rather than edit that
+state while VS Code is running. It targets the standard stable VS Code data
+directory, not Insiders or portable installations, and requires Python 3.
+VS Code 1.116 and newer include GitHub Copilot, so setup relies on the built-in
+extension. Older versions install GitHub Copilot and GitHub Copilot Chat in the
+Default profile and each configured VS Code profile using the `code` CLI. The
+CLI must be available on `PATH`; older versions need Marketplace access.
+Managed VS Code settings set `chat.disableAIFeatures` to `false` and apply it
+to all profiles, keeping built-in Copilot features enabled across profiles.
+Start each profile with
+`code-<profile>` so VS Code starts with the matching CLI environment. The
+VS Code `Default` profile uses Codex's default home; other profiles with
+`codex` enabled use their matching `CODEX_HOME`. The managed user settings list
+its shared keys in `workbench.settings.applyToAllProfiles`, so changes to those
+settings in Default or another profile are applied across all profiles.
+Profile-specific settings outside that list remain local. See the
 [VS Code Profiles guide](https://code.visualstudio.com/docs/configure/profiles).
-Chezmoi does not install or synchronize VS Code extensions. The integrated
-terminal and CLI-backed extensions inherit environment paths for the selected
-CLI profile.
+Other VS Code extensions remain profile specific and are not synchronized by
+chezmoi. The integrated terminal and CLI-backed extensions inherit environment
+paths for the selected CLI profile.
 
 Arguments passed to `code-<profile>` go directly to VS Code; the launcher does
 not create profile-specific workspace files. Fully quit every VS Code window
@@ -366,9 +378,8 @@ Codex profile settings live in
 Codex `AGENTS.md`, Claude `CLAUDE.md`, Copilot instructions, and Gemini
 instructions/settings when present. Codex profiles use file-based authentication
 so each `CODEX_HOME` keeps its own `auth.json` and can sign in to a separate
-account. VS Code uses its native profile store;
-`code-<profile>` opens that profile and creates an empty one on first use if
-the name does not exist yet.
+account. VS Code uses its native profile store; setup registers configured
+profile names there so `code-<profile>` opens the matching profile.
 
 GitHub Copilot, Claude Code, Codex, Gemini CLI, and Antigravity load their
 project-level session-start hooks from `.github/hooks/hooks.json`,

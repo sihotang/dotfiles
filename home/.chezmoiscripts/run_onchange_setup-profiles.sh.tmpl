@@ -1,6 +1,22 @@
 #!/bin/sh
 {{ $profilesDir := (index . "profilesDir") | default ".config/profiles" -}}
 {{- $profiles := (index . "profiles") | default dict -}}
+{{- $vscodeProfiles := list -}}
+{{- range $profile, $config := $profiles -}}
+  {{- if ne $profile "instructions" -}}
+    {{- $tools := $config -}}
+    {{- if not (kindIs "slice" $config) -}}
+      {{- $tools = index $config "tools" -}}
+    {{- end -}}
+    {{- if has "vscode" $tools -}}
+      {{- $name := $profile -}}
+      {{- if not (kindIs "slice" $config) -}}
+        {{- $name = index $config "name" | default $profile | printf "%v" -}}
+      {{- end -}}
+      {{- $vscodeProfiles = append $vscodeProfiles (dict "id" $profile "name" $name) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
 {{- $globalProfileInstructions := index $profiles "instructions" | default "" -}}
 {{- if and $globalProfileInstructions (not (kindIs "string" $globalProfileInstructions)) -}}
   {{- fail "profiles.instructions must be a string" -}}
@@ -64,7 +80,7 @@ umask 077
 
 profiles_base="$HOME/{{ $profilesDir }}"
 
-# Delete profile directories that are no longer declared in profiles.yaml.
+# Delete profile directories that are no longer declared in profile.yaml.
 remove_unconfigured_profiles() {
   [ -d "$profiles_base" ] || return 0
   for profile_dir in "$profiles_base"/* "$profiles_base"/.[!.]* "$profiles_base"/..?*; do
@@ -104,6 +120,18 @@ remove_legacy_gh_profile_dirs() {
 
 remove_legacy_gh_profile_dirs
 
+{{ if $vscodeProfiles -}}
+# Configure native VS Code profiles to inherit shared contents from Default.
+configure_vscode_profiles() {
+vscode_profiles_json=$(cat <<'CHEZMOI_VSCODE_PROFILES'
+{{ $vscodeProfiles | toJson }}
+CHEZMOI_VSCODE_PROFILES
+)
+  chezmoi_source_root='{{ replace "'" "'\"'\"'" (dir .chezmoi.sourceDir) }}'
+  printf '%s' "$vscode_profiles_json" | python3 "$chezmoi_source_root/scripts/configure-vscode-profiles.py"
+}
+{{ end -}}
+
 # Create a profile's state directory for the selected tool.
 create_profile() {
   tool="$1"
@@ -122,13 +150,16 @@ link_if_missing() {
   fi
 }
 
-profile_instruction_marker='<!-- Managed by chezmoi; edit profiles.yaml instead. -->'
-legacy_profile_instruction_marker='<!-- Managed by chezmoi; edit profiles.toml instead. -->'
+profile_instruction_marker='<!-- Managed by chezmoi; edit profile.yaml instead. -->'
+legacy_profile_instruction_marker='<!-- Managed by chezmoi; edit profiles.yaml instead. -->'
+legacy_toml_profile_instruction_marker='<!-- Managed by chezmoi; edit profiles.toml instead. -->'
 
 is_managed_profile_instruction() {
   [ -f "$1" ] || return 1
   marker=$(sed -n '1p' "$1")
-  [ "$marker" = "$profile_instruction_marker" ] || [ "$marker" = "$legacy_profile_instruction_marker" ]
+  [ "$marker" = "$profile_instruction_marker" ] \
+    || [ "$marker" = "$legacy_profile_instruction_marker" ] \
+    || [ "$marker" = "$legacy_toml_profile_instruction_marker" ]
 }
 
 # Restore a profile instruction file to the shared source when it is still managed.
@@ -293,4 +324,8 @@ link_if_missing "$HOME/.gemini/settings.json" "$profile_dir/settings.json"
 {{ end -}}
 {{ end -}}
 {{ end -}}
+{{ end -}}
+{{ if $vscodeProfiles -}}
+
+configure_vscode_profiles
 {{ end -}}
