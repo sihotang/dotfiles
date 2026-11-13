@@ -1,5 +1,7 @@
 {
 	"files.associations": {
+		"**/*.tmpl": "go-template",
+		"**/.chezmoitemplates/vscode/settings.json": "go-template",
 		"**/*_gitconfig.tmpl": "properties",
 		"**/git/config.tmpl": "properties"
 	},

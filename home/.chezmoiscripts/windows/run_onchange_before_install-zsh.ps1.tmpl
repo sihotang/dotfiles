@@ -12,11 +12,12 @@ $nsswitchPath = Join-Path $cygwinRoot 'etc\nsswitch.conf'
 if (-not (Test-Path $cygwinZsh) -or -not (Test-Path $cygwinGit) -or -not (Test-Path $cygwinCurl)) {
     $packageDirectory = Join-Path $env:LOCALAPPDATA 'Cygwin\packages'
     $installerPath = Join-Path ([System.IO.Path]::GetTempPath()) 'cygwin-setup-x86_64.exe'
+    $cygwinPackages = '{{ join "," .packages.windows.cygwin.packages }}'
 
     New-Item -ItemType Directory -Path $packageDirectory -Force | Out-Null
     try {
-        Invoke-WebRequest -Uri 'https://cygwin.com/setup-x86_64.exe' -OutFile $installerPath
-        & $installerPath --quiet-mode --no-admin --root $cygwinRoot --local-package-dir $packageDirectory --site 'https://mirrors.kernel.org/sourceware/cygwin/' --packages 'zsh,git,curl'
+        Invoke-WebRequest -Uri '{{ .packages.windows.cygwin.installer }}' -OutFile $installerPath
+        & $installerPath --quiet-mode --no-admin --root $cygwinRoot --local-package-dir $packageDirectory --site '{{ .packages.windows.cygwin.site }}' --packages $cygwinPackages
         if ($LASTEXITCODE -ne 0) {
             throw "Cygwin setup failed with exit code $LASTEXITCODE."
         }

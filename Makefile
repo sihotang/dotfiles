@@ -10,6 +10,7 @@ ASSISTANT_CONFIGS := \
 	.github/hooks/hooks.json
 
 check:
+	@printf '%s\n' 'Running repository checks:'
 	@CHEZMOI='$(CHEZMOI)' CHEZMOI_SOURCE='$(CHEZMOI_SOURCE)' sh scripts/check.sh
 	@CHEZMOI='$(CHEZMOI)' CHEZMOI_SOURCE='$(CHEZMOI_SOURCE)' sh scripts/lint-shell-template.sh
 

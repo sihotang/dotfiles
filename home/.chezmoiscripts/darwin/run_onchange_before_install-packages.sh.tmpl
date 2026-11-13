@@ -8,7 +8,7 @@ if brew list --formula --versions mise >/dev/null 2>&1; then
 fi
 
 if ! command -v mise >/dev/null 2>&1; then
-  curl -fsSL https://mise.run | sh
+  curl -fsSL '{{ .packages.common.mise.installer }}' | sh
 fi
 
 if ! brew list --cask --versions visual-studio-code >/dev/null 2>&1; then
@@ -16,17 +16,10 @@ if ! brew list --cask --versions visual-studio-code >/dev/null 2>&1; then
 fi
 
 brew bundle --file=/dev/stdin <<EOF
-brew "chezmoi"
-brew "gh"
-brew "git"
-brew "neovim"
-brew "zsh"
-cask "ghostty"
-cask "google-chrome"
-cask "orbstack"
-cask "cursor"
-cask "obsidian"
-cask "visual-studio-code"
+{{ range .packages.darwin.homebrew.formula }}brew "{{ . }}"
+{{ end -}}
+{{ range .packages.darwin.homebrew.cask }}cask "{{ . }}"
+{{ end -}}
 EOF
 
 brew cleanup --prune=all

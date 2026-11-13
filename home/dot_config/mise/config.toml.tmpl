@@ -1,20 +1,18 @@
 # Shared global mise configuration.
 # Runtime versions and global CLI tools managed by mise.
 [tools]
-node = "24.21.0"
-bun = "latest"
-go = "latest"
-python = "3.15.2"
-ripgrep = "latest"
-shfmt = "latest"
-atuin = "latest"
-starship = "latest"
-
-# AI CLIs use mise's npm backend with Bun as the installer.
-"npm:@openai/codex" = "latest"
-"npm:@anthropic-ai/claude-code" = { version = "latest", bun_args = "--trust" }
-"npm:@google/gemini-cli" = "latest"
-"npm:@github/copilot" = { version = "latest", bun_args = "--trust" }
+{{ $tools := .packages.common.mise.tools -}}
+{{ range $tool, $version := $tools -}}
+{{ if hasPrefix "npm:" $tool -}}
+{{ if kindIs "map" $version -}}
+{{ printf "\"%s\" = { version = %s, bun_args = %s }\n" $tool (index $version "version" | quote) (index $version "bun_args" | quote) }}
+{{- else -}}
+{{ printf "\"%s\" = %s\n" $tool ($version | quote) }}
+{{- end -}}
+{{- else -}}
+{{ printf "%s = %s\n" $tool ($version | quote) }}
+{{- end -}}
+{{ end }}
 
 [settings]
 # Install missing configured tools when a command needs them.

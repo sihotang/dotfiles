@@ -1,0 +1,104 @@
+# System packages installed by the platform setup scripts.
+packages:
+  common:
+    mise:
+      installer: https://mise.run
+      tools:
+        node: "24.21.0"
+        bun: latest
+        go: latest
+        python: "3.15.2"
+        ripgrep: latest
+        shfmt: latest
+        atuin: latest
+        starship: latest
+        "npm:@openai/codex": latest
+        "npm:@anthropic-ai/claude-code":
+          version: latest
+          bun_args: --trust
+        "npm:@google/gemini-cli": latest
+        "npm:@github/copilot":
+          version: latest
+          bun_args: --trust
+  darwin:
+    homebrew:
+      formula:
+        - gh
+        - git
+        - neovim
+        - zsh
+      cask:
+        - ghostty
+        - google-chrome
+        - orbstack
+        - cursor
+        - obsidian
+        - visual-studio-code
+  linux:
+    apt:
+      system:
+        - ca-certificates
+        - curl
+        - git
+        - gnupg
+        - neovim
+        - zsh
+      github_cli: gh
+      applications:
+        - vscode
+        - chrome
+        - cursor
+        - obsidian
+        - ghostty
+    dnf:
+      system:
+        - ca-certificates
+        - curl
+        - git
+        - neovim
+        - zsh
+      github_cli: gh
+      applications:
+        - vscode
+        - chrome
+        - cursor
+        - ghostty
+    pacman:
+      system:
+        - ca-certificates
+        - curl
+        - git
+        - github-cli
+        - neovim
+        - zsh
+      applications:
+        - ghostty
+    zypper:
+      system:
+        - ca-certificates
+        - curl
+        - git
+        - neovim
+        - zsh
+      github_cli: gh
+      applications:
+        - ghostty
+  windows:
+    winget:
+      - jdx.mise
+      - Git.Git
+      - GitHub.cli
+      - Neovim.Neovim
+      - Microsoft.VisualStudioCode
+      - Google.Chrome
+      - Anysphere.Cursor
+      - Obsidian.Obsidian
+    cygwin:
+      installer: https://cygwin.com/setup-x86_64.exe
+      site: https://mirrors.kernel.org/sourceware/cygwin/
+      packages:
+        - zsh
+        - git
+        - curl
+    oh_my_zsh:
+      installer: https://install.ohmyz.sh/

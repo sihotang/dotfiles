@@ -182,6 +182,12 @@ grep -F 'profile-enabled() {' "$tmpdir/functions" > /dev/null
 ! grep -F 'ai-use() {' "$tmpdir/functions" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data "$PROFILE_TEST_DATA" execute-template --file home/.chezmoiscripts/run_onchange_setup-profiles.sh.tmpl > "$tmpdir/setup-profiles.sh"
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" execute-template --file home/.chezmoiscripts/darwin/run_onchange_before_install-packages.sh.tmpl > "$tmpdir/darwin-packages.sh"
+grep -Fx '!packages.yaml' home/.chezmoidata/.gitignore > /dev/null
+! grep -Fx '        - chezmoi' home/.chezmoidata/packages.yaml > /dev/null
+"$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" execute-template --file home/dot_config/mise/config.toml.tmpl > "$tmpdir/mise-config.toml"
+grep -Fx 'atuin = "latest"' "$tmpdir/mise-config.toml" > /dev/null
+grep -Fx 'starship = "latest"' "$tmpdir/mise-config.toml" > /dev/null
+grep -F '"npm:@openai/codex" = "latest"' "$tmpdir/mise-config.toml" > /dev/null
 "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" --override-data '{"chezmoi":{"os":"linux"}}' execute-template --file home/.chezmoiscripts/linux/run_onchange_before_install-packages.sh.tmpl > "$tmpdir/linux-packages.sh"
 sh -n "$tmpdir/linux-packages.sh"
 grep -F 'apt-get install -y ca-certificates curl git gnupg neovim zsh' "$tmpdir/linux-packages.sh" > /dev/null
@@ -304,6 +310,7 @@ printf '%s\n' '#!/bin/sh' '[ "$#" -eq 2 ] && [ "$1" = which ] && [ "$2" = rg ] |
 printf '%s\n' '#!/bin/sh' '[ "$#" -eq 2 ] && [ "$1" = --locate-extension ] && [ "$2" = continue.continue ] || exit 1' 'printf "%s\n" "${CHEZMOI_VSCODE_TEST_EXTENSION_PATH:-/mise-test/vscode/extensions/continue.continue}"' > "$tmpdir/bin/code"
 chmod +x "$tmpdir/bin/mise" "$tmpdir/bin/code"
 PATH="$tmpdir/bin:$PATH" "$CHEZMOI" --source "$CHEZMOI_SOURCE" --config "$tmpdir/chezmoi.toml" execute-template --file 'home/private_Library/private_Application Support/private_Code/User/settings.json.tmpl' > "$tmpdir/vscode-settings.json"
+python3 -c 'import json,sys; settings=json.load(open(sys.argv[1])); workspace=json.load(open(sys.argv[2])); associations=workspace["files.associations"]; assert "**/.chezmoitemplates/vscode/settings.json" not in settings["files.associations"]; assert associations["**/*.tmpl"] == "go-template"; assert associations["**/.chezmoitemplates/vscode/settings.json"] == "go-template"' "$tmpdir/vscode-settings.json" .vscode/settings.json
 python3 -m json.tool "$tmpdir/vscode-settings.json" > /dev/null
 python3 -c 'import json,sys; settings=json.load(open(sys.argv[1])); keys=set(settings)-{"yaml.schemas","workbench.settings.applyToAllProfiles"}; assert keys == set(settings["workbench.settings.applyToAllProfiles"]), "VS Code managed settings must be shared across profiles"; assert settings["todo-tree.ripgrep.ripgrep"] == "/mise-test/ripgrep/rg", "VS Code ripgrep path must come from mise which rg"; assert "file:///mise-test/vscode/extensions/continue.continue/config-yaml-schema.json" in settings["yaml.schemas"], "Continue schema path must come from code --locate-extension"' "$tmpdir/vscode-settings.json"
 for template in 'home/dot_config/Code/User/settings.json.tmpl' 'home/AppData/Roaming/Code/User/settings.json.tmpl'; do
@@ -321,4 +328,19 @@ grep -Fx '#!/bin/sh' "$tmpdir/setup-profiles-empty.sh" > /dev/null
 python3 -m json.tool "$tmpdir/gemini-settings.json" > /dev/null
 GIT_CONFIG_PARAMETERS="'credential.helper=' 'credential.helper=!gh auth git-credential'" git config --get-all credential.helper | grep -Fx '!gh auth git-credential' > /dev/null
 git diff --check
+printf '%s\n' \
+  'PASS examples/.chezmoidata/*.example and scripts/copy-example-data.sh' \
+  'PASS home/dot_gitconfig.tmpl and home/dot_config/git/config.tmpl' \
+  'PASS home/dot_config/private_gh/private_config.yml.tmpl' \
+  'PASS home/.chezmoiscripts/run_onchange_setup-profiles.sh.tmpl' \
+  'PASS home/dot_config/zsh/aliases.zsh.tmpl' \
+  'PASS home/dot_config/zsh/exports.zsh.tmpl' \
+  'PASS home/dot_config/zsh/functions.zsh.tmpl and integrations.zsh' \
+  'PASS home/.chezmoidata/packages.yaml and platform package setup templates' \
+  'PASS home/dot_config/mise/config.toml.tmpl' \
+  'PASS home/.chezmoiignore.tmpl' \
+  'PASS scripts/configure-vscode-profiles.py and VS Code profile setup template' \
+  'PASS home/private_dot_gemini/settings.json' \
+  'PASS home/.chezmoitemplates/vscode/settings.json and platform settings templates' \
+  'PASS .vscode/settings.json workspace settings'
 printf '%s\n' 'Repository checks passed.'

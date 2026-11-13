@@ -8,14 +8,8 @@ if (-not $winget) {
 }
 
 $packageIds = @(
-    'jdx.mise'
-    'Git.Git'
-    'GitHub.cli'
-    'Neovim.Neovim'
-    'Microsoft.VisualStudioCode'
-    'Google.Chrome'
-    'Anysphere.Cursor'
-    'Obsidian.Obsidian'
+{{ range .packages.windows.winget }}    '{{ . }}'
+{{ end -}}
 )
 
 foreach ($packageId in $packageIds) {

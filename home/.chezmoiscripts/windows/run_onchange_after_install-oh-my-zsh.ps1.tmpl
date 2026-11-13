@@ -15,7 +15,7 @@ if ((Test-Path (Split-Path -Parent $ohMyZshScript)) -and -not (Test-Path $ohMyZs
 if (-not (Test-Path $ohMyZshScript)) {
     # Keep the managed .zshrc and avoid starting an interactive shell during apply.
     $installCommand = @'
-CHSH=no KEEP_ZSHRC=yes RUNZSH=no sh -c "$(curl -fsSL https://install.ohmyz.sh/)" ohmyzsh --unattended
+CHSH=no KEEP_ZSHRC=yes RUNZSH=no sh -c "$(curl -fsSL '{{ .packages.windows.oh_my_zsh.installer }}')" ohmyzsh --unattended
 '@
     & $cygwinBash -lc $installCommand
     if ($LASTEXITCODE -ne 0) {

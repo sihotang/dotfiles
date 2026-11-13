@@ -1,5 +1,6 @@
 {{ if eq .chezmoi.os "windows" -}}
-# mise config checksum: {{ include "dot_config/mise/config.toml" | sha256sum }}
+# mise config checksum: {{ include "dot_config/mise/config.toml.tmpl" | sha256sum }}
+# mise package list checksum: {{ .packages.common.mise | toJson | sha256sum }}
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
