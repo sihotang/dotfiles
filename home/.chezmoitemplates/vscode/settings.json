@@ -1,0 +1,93 @@
+{{- $continueExtension := output "code" "--locate-extension" "continue.continue" | trim | replace "\\" "/" -}}
+{{- $encodedExtension := urlquery $continueExtension | replace "%2F" "/" | replace "%3A" ":" | replace "+" "%20" -}}
+{{- $schemaURL := printf "file://%s/config-yaml-schema.json" $encodedExtension -}}
+{{- if not (hasPrefix "/" $encodedExtension) -}}
+{{- $schemaURL = printf "file:///%s/config-yaml-schema.json" $encodedExtension -}}
+{{- end -}}
+{
+	"[javascript]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[json,jsonc,jsonl]": {
+		"editor.defaultFormatter": "vscode.json-language-features"
+	},
+	"[go-template]": {
+		"editor.defaultFormatter": "gohugoio.gotmplfmt"
+	},
+	"chat.instructionsFilesLocations": {
+		".github/instructions": true,
+		".claude/rules": true,
+		"~/.copilot/instructions": true,
+		"~/.claude/rules": true
+	},
+  "chat.agent.enabled": true,
+	"chat.disableAIFeatures": false,
+	"chat.viewSessions.orientation": "stacked",
+	"cSpell.language": "en,id",
+	"cSpell.userWords": [
+		"atuin",
+		"bunzip",
+		"chezmoi",
+		"chezmoiroot",
+		"croot",
+		"lmstudio",
+		"mkcd",
+		"ollama",
+		"orbstack",
+		"shellenv",
+		"sihotang",
+		"soparsio",
+		"toplevel",
+		"unxz"
+	],
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"editor.formatOnSave": true,
+	"files.associations": {
+		"*.json.example": "json",
+		"*.json.tmpl": "go-template",
+		"*.yaml.example": "yaml",
+		"*.yaml.tmpl": "go-template"
+	},
+	"gitlens.graph.details.location": "auto",
+	"go-template.languages": ["json", "yaml"],
+	"makefile.configureOnOpen": true,
+	"mssql.connectionGroups": [
+		{
+			"id": "ROOT",
+			"name": "ROOT"
+		}
+	],
+	"todo-tree.ripgrep.ripgrep": "{{ output "mise" "which" "rg" | trim }}",
+	"window.density.layout": "compact",
+	"workbench.colorTheme": "GitHub Dark Default",
+	"workbench.iconTheme": "vscode-icons",
+	"workbench.secondarySideBar.showLabels": false,
+	"workbench.settings.applyToAllProfiles": [
+		"[javascript]",
+		"[json,jsonc,jsonl]",
+		"[go-template]",
+		"chat.agent.enabled",
+		"chat.disableAIFeatures",
+		"chat.instructionsFilesLocations",
+		"chat.viewSessions.orientation",
+		"cSpell.language",
+		"cSpell.userWords",
+		"editor.defaultFormatter",
+		"editor.formatOnSave",
+		"files.associations",
+		"go-template.languages",
+		"gitlens.graph.details.location",
+		"makefile.configureOnOpen",
+		"mssql.connectionGroups",
+		"todo-tree.ripgrep.ripgrep",
+		"window.density.layout",
+		"workbench.colorTheme",
+		"workbench.iconTheme",
+		"workbench.secondarySideBar.showLabels"
+	],
+	"yaml.schemas": {
+		{{ $schemaURL | toJson }}: [
+			".continue/**/*.yaml"
+		]
+	}
+}

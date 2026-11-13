@@ -1,0 +1,33 @@
+{{ if eq .chezmoi.os "linux" -}}
+#!/bin/sh
+
+set -eu
+
+if [ -z "${WSL_DISTRO_NAME:-}" ] && ! { [ -r /proc/sys/kernel/osrelease ] && grep -qi microsoft /proc/sys/kernel/osrelease; }; then
+  exit 0
+fi
+
+code_cli=$(command -v code || command -v code-insiders || command -v code-oss || true)
+case "$code_cli" in
+  /mnt/[a-zA-Z]/*|*.exe|*.cmd|*.bat) ;;
+  *) exit 0 ;;
+esac
+
+case "$(printf '%s' "$code_cli" | tr '[:upper:]' '[:lower:]')" in
+  *insider*) vscode_data_dir='Code - Insiders' ;;
+  *code-oss*|*code\ -\ oss*) vscode_data_dir='Code - OSS' ;;
+  *) vscode_data_dir='Code' ;;
+esac
+
+cmd=$(command -v cmd.exe || command -v cmd)
+wslpath=$(command -v wslpath)
+windows_appdata=$("$cmd" /C 'echo %APPDATA%' | tr -d '\r')
+appdata=$("$wslpath" -u "$windows_appdata")
+source_settings="$HOME/.config/Code/User/settings.json"
+target_dir="$appdata/$vscode_data_dir/User"
+
+mkdir -p "$target_dir"
+temporary_settings="$target_dir/settings.json.chezmoi-tmp"
+cp "$source_settings" "$temporary_settings"
+mv "$temporary_settings" "$target_dir/settings.json"
+{{ end -}}

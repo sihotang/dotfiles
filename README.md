@@ -145,10 +145,13 @@ The package setup runs `brew cleanup --prune=all` afterward to remove old
 package versions and stale cache files.
 Neovim is installed as a Homebrew formula, and its configuration reuses the
 shared Vim settings at `~/.config/nvim/init.vim`.
-Visual Studio Code is installed as a Homebrew cask on macOS, with portable user
-settings managed at `~/Library/Application Support/Code/User/settings.json`.
-Machine-specific extension paths and temporary agent instruction paths are
-kept out of the shared settings.
+Visual Studio Code is installed as a Homebrew cask on macOS. Shared user
+settings are managed at the standard stable VS Code settings path on macOS,
+Windows, and Linux. In WSL, settings are mirrored to Windows APPDATA when the
+`code` CLI resolves to a Windows installation; Linux VS Code uses the Linux
+settings path. The Continue schema URI is generated from the installed
+extension path. Machine-specific extension paths and temporary agent
+instruction paths are kept out of the shared settings.
 
 Git settings live under `home/dot_config/git/` and are included by the managed
 `~/.gitconfig`. Machine-specific global Git settings belong in
@@ -347,7 +350,13 @@ Servers, and Snippets to use the Default profile. Extensions stay profile
 specific. This edits VS Code's internal profile state, so close all VS Code
 windows before running `chezmoi apply`; the script fails rather than edit that
 state while VS Code is running. It targets the standard stable VS Code data
-directory, not Insiders or portable installations, and requires Python 3.
+directory for stable, Insiders, and Code OSS installations on macOS, Windows,
+and Linux. In WSL, it uses Windows storage and process detection when `code`
+resolves to a Windows installation. It detects portable installs with a `data`
+directory beside the VS Code CLI. For a custom `--user-data-dir`, set
+`CHEZMOI_VSCODE_PROFILE_STORAGE_PATH` to that directory's
+`User/globalStorage/storage.json` file. Python 3 and a matching `code` CLI are
+required.
 VS Code 1.116 and newer include GitHub Copilot, so setup relies on the built-in
 extension. Older versions install GitHub Copilot and GitHub Copilot Chat in the
 Default profile and each configured VS Code profile using the `code` CLI. The
