@@ -1,0 +1,20 @@
+{{ if eq .chezmoi.os "windows" -}}
+# mise config checksum: {{ include "dot_config/mise/config.toml" | sha256sum }}
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
+$miseCommand = Get-Command mise -ErrorAction SilentlyContinue
+if ($miseCommand) {
+    $misePath = $miseCommand.Source
+} else {
+    $misePath = Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Links\mise.exe'
+}
+if (-not (Test-Path $misePath)) {
+    throw "mise was not found at $misePath. Restart PowerShell and rerun chezmoi apply."
+}
+
+& $misePath install bun
+if ($LASTEXITCODE -ne 0) { throw 'mise install bun failed.' }
+& $misePath exec bun -- $misePath install
+if ($LASTEXITCODE -ne 0) { throw 'mise install failed.' }
+{{ end -}}

@@ -25,7 +25,7 @@ Existing local data files are preserved. Git is required. On macOS, the shell
 script uses Homebrew when available and otherwise installs chezmoi to
 `~/.local/bin`; it also requires `curl` for the fallback. The PowerShell script
 uses PowerShell's web request support. The managed shell configuration is for
-Zsh; on Windows, use WSL if you want to use that shell configuration.
+Zsh.
 
 If chezmoi is already installed and you prefer to manage the steps yourself,
 initialize the repository directly:
@@ -48,12 +48,11 @@ $sourceDir = chezmoi source-path
 & "$sourceDir/scripts/copy-example-data.ps1" -SourceDir $sourceDir
 ```
 
-On macOS, `chezmoi apply` installs the Homebrew packages listed in
-`.chezmoiscripts/darwin/run_onchange_before_install-packages.sh.tmpl` when
-Homebrew is available. The package script runs again when its package list
-changes. It installs `mise` with the optimized `mise.run` installer instead
-of Homebrew, removing an existing Homebrew `mise` formula during the one-time
-migration.
+`chezmoi apply` installs packages with the native package manager for each
+platform. macOS uses Homebrew; Linux supports apt, dnf, pacman, and zypper; and
+native Windows uses WinGet. Package scripts run again when their package lists
+change. Mise is installed from its official installer on macOS and Linux and
+from WinGet on Windows.
 
 Then preview and apply:
 
@@ -84,12 +83,10 @@ The `.zshrc` entry point loads those modules directly.
 
 On macOS, Linux, and WSL, GitHub CLI settings go to `~/.config/gh/`. On native
 Windows, they go to `%APPDATA%\GitHub CLI\config.yml`; Vim uses `_vimrc`
-instead of `.vimrc`. Zsh files are managed on Windows as well, and `.zshrc`
-loads Oh My Zsh when it is installed. Oh My Zsh requires Zsh; on Windows, WSL 2
-is recommended, while Cygwin or MSYS2 are alternatives. Native Windows setup
-does not install either. If using Cygwin or MSYS2, ensure Zsh and chezmoi use
-the same home directory. WSL uses Linux paths and needs no separate Windows
-path configuration.
+instead of `.vimrc`. Native Windows setup installs a user-local Cygwin with Zsh,
+Git, and curl, configures Cygwin to use the Windows profile as its home, and
+installs Oh My Zsh after applying `.zshrc`. The Cygwin Terminal shortcut starts
+Zsh. WSL 2 remains an option for a full Linux environment and uses Linux paths.
 
 ## Everyday use
 
@@ -126,26 +123,28 @@ your home directory. `editor` sets the default editor for Zsh and Git; it
 defaults to `code --wait`.
 
 Global mise settings live in `~/.config/mise/config.toml`; Node.js `24.21.0` is
-the configured default, with Bun, the latest stable Go, ripgrep, and Python
-`3.15.2` also managed by mise. Mise updates itself automatically. Codex CLI,
-Claude Code, Gemini CLI, and GitHub Copilot CLI are installed globally through npm,
-managed as mise npm tools with Bun as the package manager. After applying the
-config, chezmoi installs Bun first, then runs `mise install` for configured
-tools. It runs again when the mise config changes. Starship's prompt settings
-live in `~/.config/starship.toml`, and Atuin settings live in
+the configured default, with Bun, the latest stable Go, ripgrep, Starship,
+Atuin, and Python `3.15.2` also managed by mise. Mise self-updates on macOS and
+Linux; on Windows, WinGet manages mise updates. Codex CLI, Claude Code, Gemini
+CLI, and GitHub Copilot CLI are
+installed globally through npm, managed as mise npm tools with Bun as the
+package manager. After applying the config, chezmoi installs Bun first, then
+runs `mise install` for configured tools. It runs again when the mise config
+changes. Starship's prompt settings live in `~/.config/starship.toml`, and
+Atuin settings live in
 `~/.config/atuin/config.toml`. The Zsh integration sets `ATUIN_CONFIG_DIR` to
 that Atuin directory. The existing `~/.atuin/config.toml` is left untouched.
-Ghostty is installed as a Homebrew cask on macOS, with its config at
-`~/.config/ghostty/config`.
-Google Chrome is installed as a Homebrew cask on macOS.
-OrbStack is installed as a Homebrew cask on macOS.
-Cursor is installed as a Homebrew cask on macOS.
-Obsidian is installed as a Homebrew cask on macOS.
-The package setup runs `brew cleanup --prune=all` afterward to remove old
-package versions and stale cache files.
-Neovim is installed as a Homebrew formula, and its configuration reuses the
-shared Vim settings at `~/.config/nvim/init.vim`.
-Visual Studio Code is installed as a Homebrew cask on macOS. Shared user
+macOS installs Ghostty, Chrome, OrbStack, Cursor, Obsidian, and Visual Studio
+Code with Homebrew. Linux installs Ghostty when the distribution repository
+provides it; Debian-based systems install Chrome, Cursor, Obsidian, and Visual
+Studio Code, while DNF-based systems install Chrome, Cursor, and Visual Studio
+Code. WSL skips Linux desktop applications and uses GUI applications installed
+on the Windows host. OrbStack is macOS-only. Ghostty has no official Windows
+application. Native Windows installs Chrome, Cursor, Obsidian, and Visual
+Studio Code with WinGet.
+Neovim is installed with the platform package manager, and its configuration
+reuses the shared Vim settings at `~/.config/nvim/init.vim`.
+Visual Studio Code is installed with the platform package manager. Shared user
 settings are managed at the standard stable VS Code settings path on macOS,
 Windows, and Linux. In WSL, settings are mirrored to Windows APPDATA when the
 `code` CLI resolves to a Windows installation; Linux VS Code uses the Linux

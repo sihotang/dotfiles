@@ -1,0 +1,25 @@
+{{ if eq .chezmoi.os "windows" -}}
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
+$cygwinBash = Join-Path $env:LOCALAPPDATA 'Cygwin\bin\bash.exe'
+$ohMyZshScript = Join-Path $env:USERPROFILE '.oh-my-zsh\oh-my-zsh.sh'
+
+if (-not (Test-Path $cygwinBash)) {
+    throw "Cygwin Bash was not found at $cygwinBash. Rerun chezmoi apply."
+}
+if ((Test-Path (Split-Path -Parent $ohMyZshScript)) -and -not (Test-Path $ohMyZshScript)) {
+    throw "An incomplete Oh My Zsh directory exists at $(Split-Path -Parent $ohMyZshScript); move it aside and rerun chezmoi apply."
+}
+
+if (-not (Test-Path $ohMyZshScript)) {
+    # Keep the managed .zshrc and avoid starting an interactive shell during apply.
+    $installCommand = @'
+CHSH=no KEEP_ZSHRC=yes RUNZSH=no sh -c "$(curl -fsSL https://install.ohmyz.sh/)" ohmyzsh --unattended
+'@
+    & $cygwinBash -lc $installCommand
+    if ($LASTEXITCODE -ne 0) {
+        throw "Oh My Zsh installation failed with exit code $LASTEXITCODE."
+    }
+}
+{{ end -}}

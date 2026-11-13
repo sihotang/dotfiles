@@ -1,0 +1,45 @@
+{{ if eq .chezmoi.os "windows" -}}
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
+$cygwinRoot = Join-Path $env:LOCALAPPDATA 'Cygwin'
+$cygwinBash = Join-Path $cygwinRoot 'bin\bash.exe'
+$cygwinZsh = Join-Path $cygwinRoot 'bin\zsh.exe'
+$cygwinGit = Join-Path $cygwinRoot 'bin\git.exe'
+$cygwinCurl = Join-Path $cygwinRoot 'bin\curl.exe'
+$nsswitchPath = Join-Path $cygwinRoot 'etc\nsswitch.conf'
+
+if (-not (Test-Path $cygwinZsh) -or -not (Test-Path $cygwinGit) -or -not (Test-Path $cygwinCurl)) {
+    $packageDirectory = Join-Path $env:LOCALAPPDATA 'Cygwin\packages'
+    $installerPath = Join-Path ([System.IO.Path]::GetTempPath()) 'cygwin-setup-x86_64.exe'
+
+    New-Item -ItemType Directory -Path $packageDirectory -Force | Out-Null
+    try {
+        Invoke-WebRequest -Uri 'https://cygwin.com/setup-x86_64.exe' -OutFile $installerPath
+        & $installerPath --quiet-mode --no-admin --root $cygwinRoot --local-package-dir $packageDirectory --site 'https://mirrors.kernel.org/sourceware/cygwin/' --packages 'zsh,git,curl'
+        if ($LASTEXITCODE -ne 0) {
+            throw "Cygwin setup failed with exit code $LASTEXITCODE."
+        }
+    } finally {
+        Remove-Item -LiteralPath $installerPath -Force -ErrorAction SilentlyContinue
+    }
+}
+
+if (-not (Test-Path $cygwinBash) -or -not (Test-Path $cygwinZsh) -or -not (Test-Path $cygwinGit) -or -not (Test-Path $cygwinCurl) -or -not (Test-Path $nsswitchPath)) {
+    throw "Cygwin did not install correctly under $cygwinRoot."
+}
+
+$nsswitch = [System.IO.File]::ReadAllText($nsswitchPath)
+$settings = @{ db_home = 'windows'; db_shell = '/bin/zsh' }
+foreach ($key in $settings.Keys) {
+    $value = $settings[$key]
+    $pattern = "(?m)^\s*#?\s*$key\s*:\s*.*$"
+    if ([System.Text.RegularExpressions.Regex]::IsMatch($nsswitch, $pattern)) {
+        $nsswitch = [System.Text.RegularExpressions.Regex]::Replace($nsswitch, $pattern, "${key}: ${value}", 1)
+    } else {
+        $nsswitch = $nsswitch.TrimEnd([char[]]"`r`n") + "`r`n${key}: ${value}`r`n"
+    }
+}
+# Match Cygwin's home to chezmoi's Windows home and start its terminal in Zsh.
+[System.IO.File]::WriteAllText($nsswitchPath, $nsswitch, [System.Text.UTF8Encoding]::new($false))
+{{ end -}}
